@@ -71,13 +71,22 @@ func main() {
 		DiskCacheFilePath:   "./tmp/activity",
 		GitOperationTimeout: time.Minute,
 	}
+	fav := server.FaviconOptions{
+		Png16Path:  "./gofed-16.png",
+		Png32Path:  "./gofed-32.png",
+		Png48Path:  "./gofed-48.png",
+		Png96Path:  "./gofed-96.png",
+		Png192Path: "./gofed-192.png",
+	}
 	opts := server.ServerOptions{
 		TemplateFiles: []string{"tmpl.tmpl"},
 		Repositories:  []server.RepositoryOptions{rOpt},
 		HttpServer:    httpsServer,
 		RefreshRate:   time.Minute * 5,
-		Favicon:       "./favicon.png",
+		Favicon:       fav,
 		SiteTitle:     "Go-Fed",
+		OrgDataPath:   "https://github.com/go-fed",
+		OrgDataName:   "GitHub",
 	}
 	srv, err := server.NewServer(opts)
 	if err != nil {

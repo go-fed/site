@@ -20,7 +20,7 @@ const (
 	repositoryPath = "/repo"
 	tagPath        = "/tag"
 	packagePath    = "/pkg"
-	faviconPath    = "/favicon.ico"
+	faviconPath    = "/favicon"
 )
 
 type ProjectPackage struct {
@@ -47,23 +47,39 @@ type RepositoryOptions struct {
 	GitOperationTimeout time.Duration
 }
 
+type FaviconOptions struct {
+	Png16Path  string
+	Png32Path  string
+	Png48Path  string
+	Png96Path  string
+	Png192Path string
+}
+
 type ServerOptions struct {
 	TemplateFiles []string
 	Repositories  []RepositoryOptions
 	HttpServer    *http.Server
 	RefreshRate   time.Duration
-	Favicon       string
+	Favicon       FaviconOptions
 	SiteTitle     string
+	OrgDataPath   string
+	OrgDataName   string
 }
 
 type Server struct {
-	repo      map[string]*repository
-	favicon   []byte
-	siteTitle string
-	renderer  *renderer
-	mux       *http.ServeMux
-	server    *http.Server
-	refresh   time.Duration
+	repo        map[string]*repository
+	favicon16   []byte
+	favicon32   []byte
+	favicon48   []byte
+	favicon96   []byte
+	favicon192  []byte
+	siteTitle   string
+	orgDataPath string
+	orgDataName string
+	renderer    *renderer
+	mux         *http.ServeMux
+	server      *http.Server
+	refresh     time.Duration
 }
 
 func NewServer(opts ServerOptions) (*Server, error) {
@@ -71,17 +87,49 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	favicon, err := ioutil.ReadFile(opts.Favicon)
-	if err != nil {
-		return nil, err
-	}
 	s := &Server{
-		repo:      make(map[string]*repository),
-		favicon:   favicon,
-		siteTitle: opts.SiteTitle,
-		renderer:  renderer,
-		server:    opts.HttpServer,
-		refresh:   opts.RefreshRate,
+		repo:        make(map[string]*repository),
+		siteTitle:   opts.SiteTitle,
+		orgDataPath: opts.OrgDataPath,
+		orgDataName: opts.OrgDataName,
+		renderer:    renderer,
+		server:      opts.HttpServer,
+		refresh:     opts.RefreshRate,
+	}
+	if len(opts.Favicon.Png16Path) > 0 {
+		favicon, err := ioutil.ReadFile(opts.Favicon.Png16Path)
+		if err != nil {
+			return nil, err
+		}
+		s.favicon16 = favicon
+	}
+	if len(opts.Favicon.Png32Path) > 0 {
+		favicon, err := ioutil.ReadFile(opts.Favicon.Png32Path)
+		if err != nil {
+			return nil, err
+		}
+		s.favicon32 = favicon
+	}
+	if len(opts.Favicon.Png48Path) > 0 {
+		favicon, err := ioutil.ReadFile(opts.Favicon.Png48Path)
+		if err != nil {
+			return nil, err
+		}
+		s.favicon48 = favicon
+	}
+	if len(opts.Favicon.Png96Path) > 0 {
+		favicon, err := ioutil.ReadFile(opts.Favicon.Png96Path)
+		if err != nil {
+			return nil, err
+		}
+		s.favicon96 = favicon
+	}
+	if len(opts.Favicon.Png192Path) > 0 {
+		favicon, err := ioutil.ReadFile(opts.Favicon.Png192Path)
+		if err != nil {
+			return nil, err
+		}
+		s.favicon192 = favicon
 	}
 	for _, repo := range opts.Repositories {
 		s.repo[repo.ProjectName] = newRepository(repo.HttpsCloneURL, repo.DiskCacheFilePath, repo.GitOperationTimeout)
@@ -91,11 +139,64 @@ func NewServer(opts ServerOptions) (*Server, error) {
 
 func (s *Server) createServeMux(projectPkgs ProjectPackages) {
 	s.mux = http.NewServeMux()
-	s.mux.HandleFunc(faviconPath, func(w http.ResponseWriter, req *http.Request) {
-		b := bytes.NewReader(s.favicon)
-		http.ServeContent(w, req, "image/x-icon", time.Now(), b)
-	})
+	var favicons []*faviconData
+	if len(s.favicon16) > 0 {
+		path := faviconPath + "-16.png"
+		s.mux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
+			b := bytes.NewReader(s.favicon16)
+			http.ServeContent(w, req, "image/png", time.Now(), b)
+		})
+		favicons = append(favicons, &faviconData{
+			Path: path,
+			Size: "16x16",
+		})
+	}
+	if len(s.favicon48) > 0 {
+		path := faviconPath + "-48.png"
+		s.mux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
+			b := bytes.NewReader(s.favicon48)
+			http.ServeContent(w, req, "image/png", time.Now(), b)
+		})
+		favicons = append(favicons, &faviconData{
+			Path: path,
+			Size: "48x48",
+		})
+	}
+	if len(s.favicon96) > 0 {
+		path := faviconPath + "-96.png"
+		s.mux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
+			b := bytes.NewReader(s.favicon96)
+			http.ServeContent(w, req, "image/png", time.Now(), b)
+		})
+		favicons = append(favicons, &faviconData{
+			Path: path,
+			Size: "96x96",
+		})
+	}
+	if len(s.favicon192) > 0 {
+		path := faviconPath + "-192.png"
+		s.mux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
+			b := bytes.NewReader(s.favicon192)
+			http.ServeContent(w, req, "image/png", time.Now(), b)
+		})
+		favicons = append(favicons, &faviconData{
+			Path: path,
+			Size: "192x192",
+		})
+	}
+	if len(s.favicon32) > 0 {
+		path := faviconPath + "-32.png"
+		s.mux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
+			b := bytes.NewReader(s.favicon32)
+			http.ServeContent(w, req, "image/png", time.Now(), b)
+		})
+		favicons = append(favicons, &faviconData{
+			Path: path,
+			Size: "32x32",
+		})
+	}
 	cd := &commonData{
+		Favicons:    favicons,
 		PageTitle:   s.siteTitle,
 		RefreshTime: time.Now().UTC(),
 	}
@@ -112,6 +213,12 @@ func (s *Server) createServeMux(projectPkgs ProjectPackages) {
 			Path: repositoryPath,
 			C:    cd,
 		},
+	}
+	if len(s.orgDataPath) > 0 && len(s.orgDataName) > 0 {
+		d.OrgData = &orgData{
+			Path: s.orgDataPath,
+			Name: s.orgDataName,
+		}
 	}
 	cd.Data = d
 	s.mux.HandleFunc(homePath, func(w http.ResponseWriter, req *http.Request) {

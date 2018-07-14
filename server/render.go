@@ -25,7 +25,13 @@ type data struct {
 	HomeData         *homeData
 	TutorialData     *tutorialData
 	RepositoriesData *repositoriesData
+	OrgData          *orgData
 	RepositoryData   []*repositoryData
+}
+
+type orgData struct {
+	Path string
+	Name string
 }
 
 type repositoriesData struct {
@@ -34,9 +40,15 @@ type repositoriesData struct {
 }
 
 type commonData struct {
+	Favicons    []*faviconData
 	PageTitle   string
 	RefreshTime time.Time
 	Data        *data
+}
+
+type faviconData struct {
+	Path string
+	Size string
 }
 
 type homeData struct {
