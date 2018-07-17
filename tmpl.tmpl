@@ -16,6 +16,9 @@
 h1, h2, h3, h4, h5, h6, p, a, label {
 	margin: 0;
 }
+h1 {
+	line-height: 1em;
+}
 body {
 	background: #eaeaea;
 	margin: 0;
@@ -87,11 +90,11 @@ nav > ul > li > a {
 	padding-left: 2em;
 	list-style-type: none;
 }
-p > a {
+p > a, ol > li > a, h2 > a, h3 > a {
 	text-decoration: none;
 	color: #740d00;
 }
-p > a:hover {
+p > a:hover, ol > li > a:hover, h2 > a:hover, h3 > a:hover {
 	text-decoration: underline;
 }
 #body > ul > li > a {
@@ -154,6 +157,61 @@ pre {
 .comment {
 	color: #740d00;
 }
+.code {
+	display: inline;
+	font-family: monospace;
+	font-size: 1.2em;
+	background-color: #ffffff;
+	border-radius: 5px;
+	padding: 1px;
+}
+.keyword {
+	color: #cc6500;
+}
+.type {
+	color: #007700;
+}
+.literal {
+	color: #0000dd;
+}
+aside {
+	border-width: 2px;
+	border-style: dashed;
+	margin: 1em 4em;
+	padding: 1em 1.5em;
+}
+aside > p {
+	margin: 1em 1em
+}
+aside:before {
+	display: block;
+	font-size: 1.25em;
+	margin-bottom: 1em;
+}
+aside.caution:before {
+	content: "Caution!";
+	color: #bf7300;
+}
+aside.caution {
+	background: #ffca95;
+	border-color: #ff9900;
+}
+aside.best:before {
+	content: "Recommended Practice";
+	color: #0000dd;
+}
+aside.best{
+	background: #9999ff;
+	border-color: #0000dd;
+}
+aside.advanced:before {
+	content: "Unusual Use Case";
+	color: #ff1818;
+}
+aside.advanced {
+	background: #ffaaaa;
+	border-color: #ff1818;
+}
 @media only screen and (max-width:550px) {
 	nav > p {
 		display: none;
@@ -213,40 +271,794 @@ pre {
 
 {{/* HOME TEMPLATE */}}
 {{define "home"}}{{template "header" .C}}
-<h1>Go Federate!</h1>
-<h3>ActivityPub in golang</h3>
+<header><h1>ActivityPub in golang? Go Federate!</h1></header>
 <p>- Tired of applications that silo its users?</p>
 <p>- Want to join a decentralized network of social interactions?</p>
 <p>- Have a golang app that lacks social functionality?</p>
 <p>- Got a great social experience and looking to implement it in Go?</p>
 <p>- Looking to extend the fediverse?</p>
 <p>- Would you like a pony?</p>
-<h3>go-fed can help with all your non-equine needs!</h3>
+<h2><a href="https://github.com/go-fed/activity">go-fed/activity</a> can help with all your non-equine needs!</h2>
 <p>ActivityPub is a protocol that different social applications use to communicate
 with each other. This lets users on
 <a href="https://joinmastodon.org/">Mastodon</a>,
 <a href="https://pleroma.social/">Pleroma</a>,
 <a href="https://pixelfed.org/">PixelFed</a>,
 <a href="https://joinpeertube.org/en/home/">PeerTube</a>,
-and many more different kinds of software talk, follow, share, and like each other's
+and many other kinds of software talk, follow, share, and like each other's
 content.</p>
 <p>Whether you want to create a new social app or retrofit social
-functionality into an existing one, ActivityPub lets you take advantage of everyone's
-network effect by having everyone pitch in theirs! This is the Fediverse.</p>
-<p><a href="https://github.com/go-fed">go-fed</a> is unlike most other software on the Fediverse. It is the first and possibly
+functionality into an existing one, ActivityPub lets everyone use each other's
+network effect by pitching in together! This is the Fediverse.</p>
+<p><a href="https://github.com/go-fed/activity">go-fed/activity</a> is unlike most other
+software on the Fediverse. It is the first and possibly
 the only standalone ActivityPub library. It is also the pioneering solution in golang.
 It is designed for those who have no prior experience with ActivityPub, ActivityStreams,
 JSON-LD, or RDF.</p>
 <p>Come join the Federation and have your golang application support ActivityPub today!<p>
-<p>Come start by reading the tutorial!<p>
-<h3>About this site</h3>
+<p>Come start by reading the <a href="/tutorial">tutorial!</a><p>
+<h2>About this site</h2>
 <p>This site is the canonical resource for tutorials and documentation surrounding the
-<a href="https://github.com/go-fed">go-fed</a> organization..</p>
+<a href="https://github.com/go-fed">go-fed</a> organization.</p>
 {{template "footer" .C}}{{end}}
 
 {{/* TUTORIAL TEMPLATE */}}
-{{define "tutorial"}}{{template "header" .C}}<header><h1>Go-Fed Activity v0 Tutorial</h1></header>
-<p>To be written...</p>
+{{define "tutorial"}}{{template "header" .C}}<header><h1>The Go-Fed ActivityPub Tutorial</h1></header>
+<p>This focuses on how to use 
+<a href="https://github.com/go-fed/activity">go-fed/activity</a> version
+<span class="code">0.x</span> to create an application that implements ActivityPub in Go.<p>
+<p>You will also see these scattered thoughout the tutorial:</p>
+<aside class="best"><p>These boxes will call out suggested best practices
+when using this library!</p></aside>
+<aside class="caution"><p>These boxes will call out things that might lead to
+unexpected behaviors in code! They will also call out APIs that are at risk of
+changing in the next major version release!</p></aside>
+<aside class="advanced"><p>These boxes contain information I feel the need to
+call out for strange use cases. They are not needed in
+typical use cases, and are targeted towards those who are probably looking to
+tinker with the library while evolving specifications.</p></aside>
+<h2>Table Of Contents</h2>
+<ol>
+<li><a href="#Prerequisites">Prerequisites</a></li>
+<li><a href="#Introduction">Introduction</a></li>
+<li><a href="#Library-Layout">Library Layout</a></li>
+<li><a href="#ActivityStreams-Types-and-Properties">ActivityStreams: Types &amp; Properties</a></li>
+<li><a href="#ActivityStreams-Serialization">ActivityStreams: Serialization</a></li>
+<li><a href="#ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</a></li>
+<li><a href="#ActivityPub-SocialAPI">ActivityPub: SocialAPI (Client to Server)</a></li>
+<li><a href="#ActivityPub-FederateAPI">ActivityPub: FederateAPI (Server to Server)</a></li>
+<li><a href="#References">References</a></li>
+</ol>
+<h2 id="Prerequisites">Prerequisites</h2>
+<p>This tutorial assumes that you are familiar with the <a href="https://golang.org/">Go</a>
+programming language. If not, I highly encourage you to take a look at the
+<a href="https://tour.golang.org/">Tour of Go</a>.</p>
+<p>No prior knowledge of ActivityPub is required. While this tutorial will neither contain
+a complete nor deep overview of the protocol, it will contain enough pieces to
+get you started with the basics. Those already familiar with the protocols may find
+such pieces uninteresting.</p>
+<p>If at the end you are motivated to explore further, I have provided links to
+primary source documents and repositories.</p>
+<h2 id="Introduction">Introduction</h2>
+<p>Welcome! By the time you have finished with this section you will have a basic
+and abstract understanding of how ActivityPub works. You will have enough contextual
+knowledge to help make decisions when using this library. Those already familiar
+with ActivityPub and ActivityStreams can safely skip this section.</p>
+<p>Let's begin!</p>
+<p>ActivityPub is actually two protocols in one, but both govern application
+behavior. The SocialAPI sets the rules for client-to-server interactions. When
+implemented, an ActivityPub client could interact with any other ActivityPub
+server. This lets a user use, for example, a single client on their phone
+to talk to their accounts on different kinds of ActivityPub servers. The
+FederateAPI governs how two servers share data which lets users on
+all federating servers communicate with each other. Users on microblogs,
+photoblogs, video sites, and your future application can all interact!</p>
+<p>Despite providing both protocols, ActivityPub does not require both be
+used. For example, Mastodon supports the FederateAPI but not the SocialAPI.
+It is up to you and your application's needs whether you want to use one, the
+other, or both!</p>
+<p>To communicate, ActivityPub shares data in the ActivityStreams format. A
+piece of ActivityStream data is encoded as JSON when examined on the wire.
+However, it is actually built on top of JSON-LD which is a subset of JSON.
+To summarize a very deep topic like JSON-LD, it does two things. One: it is a
+rich data format (RDF) on top of JSON which effectively results in the JSON's
+schema being embedded within each JSON message. Two: it allows pieces of JSON
+data to refer to each other, resulting in a web of data that can be traversed
+like a graph.</p>
+<p>This means when sending and receiving ActivityStreams via ActivityPub, your
+application is actually building a graph of data. As new data is
+generated, the graph gets bigger. The idea of &quot;pointers&quot; to other
+data looks like URLs, but they are technically IRIs.</p>
+<p>The ActivityStreams specification doesn't just dictate a data format that is
+a subset of JSON-LD, it also specifies Core and Extended types of data. These
+are then used by ActivityPub to govern some basic behaviors in the SocialAPI and
+FederateAPI. Specific examples of these Core and Extended data types will be
+examined later on in the tutorial.</p>
+<p>However, your application isn't limited to handling only Core and Extended
+ActivityStream data types. Since it is built on top of JSON-LD, the
+ActivityStreams vocabulary supports extensions beyond the Core and Extended
+types. However, this will be outside the scope of this tutorial.</p>
+<p>Let's also go over some things that ActivityPub does not support out of the
+box. There may be community conventions around these topics, the details of
+which are also outside the scope of this tutorial.</p>
+<p>The security protocols for authorization and authentication is not
+standardized. Some choices I am aware of are OAuth 2.0 and HTTP Signatures.</p>
+<p>Spam handling and blocking federating peers is not-standardized and
+usually implemented as an administrative application feature.</p>
+<p>The way to fetch a raw ActivityStream versus its human-readable HTML
+representation in static servers is not currently standardized.</p>
+<p>You're now knowledgeable enough to dive into the library!</p>
+<h2 id="Library-Layout">Library Layout</h2>
+<p>The <span class="code">github.com/go-fed/activity</span> library is split
+into two different core libraries. Other libraries within the repository
+are either optional or used in code-generation.</p>
+<p>The first core library is
+<span class="code">github.com/go-fed/activity/vocab</span> which contains the
+Core and Extended ActivityStreams types. The APIs of these types are large, but
+as we will see it is by design. This library is code generated.</p>
+<p>The second core library is
+<span class="code">github.com/go-fed/activity/pub</span> which implements the
+ActivityPub protocol. It heavily relies on your application satisfying
+interfaces that are not trivial to implement. In exchange for implementing these
+interfaces, the <span class="code">pub</span> types are very easy to hook into
+new or existing code.</p>
+<p>These two libraries are all you need during daily development. For
+completeness I will go ahead and mention a few packages in the repository.</p>
+<p>An optional library built on top of <span class="code">vocab</span> is
+<span class="code">github.com/go-fed/activity/streams</span>. It tries to
+reduce the complexity of the <span class="code">vocab</span> API, but in
+further discussions with others I belive it has failed in
+its mission of being a simpler design. The <span class="code">streams</span>
+package provides a <span class="code">Resolver</span>
+type which is recommended for use, but the use of its types is discouraged and the
+types may be removed in future major versions.</p>
+<p>Everything under <span class="code">tools</span> is used to code-generate the
+<span class="code">vocab</span> and <span class="code">streams</span>
+implementation. It is ignorable for daily development.</p>
+<h2 id="ActivityStreams-Types-and-Properties">ActivityStreams: Types &amp; Properties</h2>
+<p>The
+<span class="code">vocab</span>
+package provides Go <span class="code keyword">struct</span> types that are
+equivalent to the ActivityStream types. It contains both Core and Extended
+ActivityStream types. They can be broken down into three categories: Actor,
+Activity, and Object/Link. All of these concepts dictate what data they are
+allowed to have and how to interpret such data. These are known in the
+ActivityStreams parlance as properties.</p>
+<p>Since the <span class="code type">Object</span> type is a popular choice for
+other types to extend from, we will address it and its properties first</p>
+<h3>A Deep Dive Example: The Object Type</h3>
+<p>An 
+<span class="code type">Object</span>
+represents an abstract idea on its own. Applications typically use other types
+that extend from it, inheriting all of its properties, to share data. But it is
+still OK
+to use the
+<span class="code type">Object</span>
+directly. So let's look at some of the most commonly used properties of an
+<span class="code type">Object</span>:</p>
+<ul>
+<li><i>id</i>: This is always available for <b>all</b> ActivityStream types. It
+is the unique IRI that identifies this piece of data. The IRI should match the
+actual location it could be fetched from via ActivityStream HTTP requests.</li>
+<li><i>type</i>: This is always available for <b>all</b> ActivityStream types.
+It is the source of truth for determining what kind of ActivityStreams type it
+is.</li>
+<li><i>name</i>: A human-readable name of this object. (HTML forbidden)</li>
+<li><i>content</i>: Textual content of this object. Default is HTML, but
+the <i>mediaType</i> property can indicate a different format (ex: markdown).</li>
+<li><i>to</i>: The public primary audience for the object.</li>
+<li><i>bto</i>: The private primary audience for the object.</li>
+<li><i>cc</i>: Additional public audience for the object.</li>
+<li><i>bcc</i>: Additional private audience for the object.</li>
+<li><i>inReplyTo</i>: The object(s) or link(s) that this is replying to.</li>
+<li><i>tag</i>: An association with another object (ex: hashtags)</li>
+</ul>
+<p>An
+<span class="code type">Object</span>
+is created and its properties set or accessed in the following example:</p>
+<pre><span class="comment">// Create an 'Object' type. Types are not copy-safe.</span>
+obj := &amp;vocab.<span class="type">Object</span>{}
+
+<span class="comment">// Add a value for the property 'name'</span>
+obj.AppendNameString(<span class="literal">"Hello World"</span>)
+
+<span class="comment">// Add a value for the property 'content'</span>
+obj.AppendContentString(<span class="literal">"Here is some &lt;pre&gt;HTML&lt;/pre&gt; content"</span>)
+
+<span class="comment">// Add two 'to' recipients</span>
+addisonIRI, _ := url.Parse(<span class="literal">"https://www.example.com/addison"</span>)
+obj.AppendToIRI(addisonIRI)
+dakotaIRI, _ := url.Parse(<span class="literal">"https://www.example.com/dakota"</span>)
+obj.AppendToIRI(dakotaIRI)
+
+<span class="comment">// Now let's handle all of the possible values of 'to'</span>
+<span class="keyword">for</span> i := 0; i < obj.ToLen(); i++ {
+	<span class="keyword">if</span> obj.IsToObject(i) {
+		<span class="comment">// Call obj.GetToObject(i)</span>
+	} <span class="keyword">else if</span> obj.IsToLink(i) {
+		<span class="comment">// Call obj.GetToLink(i)</span>
+	} <span class="keyword">else if</span> obj.IsToIRI(i) {
+		<span class="comment">// Call obj.GetToIRI(i)</span>
+	}
+}</pre>
+<p>Each property has quite a few methods to deal with it. There are two kinds of
+properties, which determines the methods available: properties that can have
+multiple values and properties that can have at most one value. Properties that
+can have multiple values are known as "non-functional" properties in the
+ActivityStream specification. Properties that can have at most one value are
+called "functional" properties.</p>
+<p>For example, the <i>to</i>, <i>name</i>, and <i>content</i> properties are
+all non-functional properties. Using <i>to</i> as
+an example, for a non-functional property you need to be able to:</p>
+<ul>
+<li>Be able to append a value on existing values of <i>to</i></li>
+<li>Be able to prepend a value on existing values of <i>to</i></li>
+<li>Tell how many values of <i>to</i> there are</li>
+<li>Determine what type of value <i>to</i> is at a specific index (the multiple
+values of <i>to</i> do not have to be the same type!)</li>
+<li>Get the value of <i>to</i> at a specific index with the correct type</li>
+<li>Remove the value of <i>to</i> at a specific index with the correct type</li>
+</ul>
+<p>The methods available for the <i>to</i> property therefore are:</p>
+<pre><span class="comment">// Append different types of 'to' values</span>
+<span class="type">func</span> (o *<span class="type">Object</span>) AppendToObject(v ObjectType)
+<span class="type">func</span> (o *<span class="type">Object</span>) AppendToLink(v LinkType)
+<span class="type">func</span> (o *<span class="type">Object</span>) AppendToIRI(v *url.URL)
+
+<span class="comment">// Prepend different types of 'to' values</span>
+<span class="type">func</span> (o *<span class="type">Object</span>) PrependToObject(v ObjectType)
+<span class="type">func</span> (o *<span class="type">Object</span>) PrependToLink(v LinkType)
+<span class="type">func</span> (o *<span class="type">Object</span>) PrependToIRI(v *url.URL)
+
+<span class="comment">// Determine the number of 'to' values</span>
+<span class="type">func</span> (o *<span class="type">Object</span>) ToLen() (l int)
+
+<span class="comment">// Determine what type a 'to' value is at a specific index</span>
+<span class="type">func</span> (o *<span class="type">Object</span>) IsToObject(index int) (ok bool)
+<span class="type">func</span> (o *<span class="type">Object</span>) IsToLink(index int) (ok bool)
+<span class="type">func</span> (o *<span class="type">Object</span>) IsToIRI(index int) (ok bool)
+
+<span class="comment">// Get a 'to' value at a specific index of the correct type</span>
+<span class="type">func</span> (o *<span class="type">Object</span>) GetToObject(index int) (v ObjectType)
+<span class="type">func</span> (o *<span class="type">Object</span>) GetToLink(index int) (v LinkType)
+<span class="type">func</span> (o *<span class="type">Object</span>) GetToIRI(index int) (v *url.URL)
+
+<span class="comment">// Remove a 'to' value at a specific index of the correct type</span>
+<span class="type">func</span> (o *<span class="type">Object</span>) RemoveToObject(index int)
+<span class="type">func</span> (o *<span class="type">Object</span>) RemoveToLink(index int)
+<span class="type">func</span> (o *<span class="type">Object</span>) RemoveToIRI(index int)</pre>
+<p>And for a functional property like <i>source</i>:</p>
+<pre><span class="comment">// Determine what type a 'source' value is at a specific index.</span>
+<span class="comment">// Note that getting and setting a property with one type is</span>
+<span class="comment">// so common that method names omit ending the method with</span>
+<span class="comment">// the type name if the only other acceptable type is an IRI</span>
+<span class="comment">// In this case, "Object" is the only acceptable type.</span>
+<span class="type">func</span> (o *<span class="type">Object</span>) IsSource() (ok bool)
+<span class="type">func</span> (o *<span class="type">Object</span>) IsSourceIRI() (ok bool)
+
+<span class="comment">// Get a 'source' value at a specific index of the correct type</span>
+<span class="type">func</span> (o *<span class="type">Object</span>) GetSource() (v ObjectType)
+<span class="type">func</span> (o *<span class="type">Object</span>) GetSourceIRI() (v *url.URL)
+
+<span class="comment">// Set different types of 'source' values</span>
+<span class="type">func</span> (o *<span class="type">Object</span>) SetSource(v ObjectType)
+<span class="type">func</span> (o *<span class="type">Object</span>) SetSourceIRI(v *url.URL)</pre>
+<aside class="best">Now is a good time to remind you that while your
+application can pick and a subset of properties to support, you must support
+as many types as allowed by the specification. Since this library matches the
+specification, using all methods available to you will guarantee maximum
+compatibility with the federation. Not doing so begins to
+limit what your peers can do when federating or writing client software with
+you, so please keep this in mind. Ignoring property types is similar to ignoring
+errors returned by golang functions, and is strongly discouraged. I
+strongly recommend handling as many types on a property as possible.</aside>
+<p>Repeat this for numerous properties on many different types, and the API
+grows quite large. The large size is despite of the restrictions
+that ActivityStreams imposes on top of the very-flexible JSON-LD. If there is
+one specification I would recommend keeping open while writing an ActivityStream
+application, it would be the
+<a href="https://www.w3.org/TR/activitystreams-vocabulary">ActivityStreams Vocabulary</a>.
+It will help you learn more ActivityStreams types, ActivityStreams
+properties, and the permitted value types of those properties.</p>
+<p>There's also interfaces provided in the
+<span class="code">vocab</span>
+package for each type. The
+<span class="code keyword">struct</span>
+version of each type satisfies its corresponding interface. It shares the same
+name as the ActivityStreams type with the world "Type" appended:</p>
+<pre><span class="comment">// Setting concrete 'Object' struct to 'ObjectType' interface</span>
+var objInterface vocab.<span class="type">ObjectType</span> = &amp;vocab.<span class="type">Object</span>{}</pre>
+<p>While interfaces are provided for all classes, unrelated types may satisfy
+each other's interfaces. This is because unrelated types may share the same
+properties. The only interfaces that will filter correct children types are:</p>
+<ul>
+<li><span class="code type">ObjectType</span> for objects and types that extend objects</li>
+<li><span class="code type">LinkType</span> for links and types that extend links</li>
+<li><span class="code type">CollectionType</span> for unordered collections and pages of such collections</li>
+<li><span class="code type">OrderedCollectionType</span> for ordered collections and pages of such collections</li>
+</ul>
+<p>Unfortunately, the
+<span class="code type">Activity</span>
+type requires inspecting the actual <i>type</i> property. The
+<span class="code">vocab</span>
+library provides such a function for you:</p>
+<pre>var objType vocab.<span class="type">ObjectType</span> = ...
+<span class="keyword">if</span> vocab.IsActivityType(objType) {
+	<span class="comment">// 'objType' is an ActivityStreams activity.</span>
+}</pre>
+<aside class="caution">The interfaces <b>other than</b>
+<span class="code type">ObjectType</span>,
+<span class="code type">LinkType</span>,
+<span class="code type">CollectionType</span>,
+<span class="code type">OrderedCollectionType</span>, and
+<span class="code type">ActivityType</span>
+are highly likely to be removed in a future major version. The use of those
+other interfaces is discouraged.</aside>
+<aside class="best">Use
+<span class="code type">ObjectType</span>,
+<span class="code type">LinkType</span>,
+<span class="code type">CollectionType</span>, and
+<span class="code type">OrderedCollectionType</span>
+when you want to accept such generic types. However, to determine if an
+<span class="code type">ObjectType</span> is an
+<span class="code type">ActivityType</span>, use the
+<span class="code type">IsActivityType</span> function.
+</aside>
+<p>The last piece of advice for properties I have is on IRIs. They take the
+form of URLs. They can almost always take the place of actual data, and are
+basically a pointer-over-HTTP. Whenever you see an IRI, know that fetching that
+URL will "fill in" that piece of data from your peer's server. Whenever you
+send out data with an IRI, you are telling your peers' servers that you will
+host that ActivityStream data at that IRI location.</p>
+<p>In the next sections, I will go over more types and properties from the
+<a href="https://www.w3.org/TR/activitystreams-vocabulary">ActivityStreams Vocabulary specification</a>.</p>
+<h3>Actor Types</h3>
+<p>An actor type represents a <i>who</i> or <i>what</i> is doing an Activity.
+These do not have to be human beings and could be an organization or another
+computer. The types are:</p>
+<ul>
+<li><span class="code type">Object</span>: Represents a generic actor.</li>
+<li><span class="code type">Application</span>: A software application.</li>
+<li><span class="code type">Group</span>: Multiple actors in a single unit.</li>
+<li><span class="code type">Organization</span>: An organization of some kind.</li>
+<li><span class="code type">Person</span>: A human individual.</li>
+<li><span class="code type">Service</span>: Any kind of service.</li>
+</ul>
+<p>All of these types have the same properties as
+<span class="code type">Object</span>.</p>
+<h3>Activity Types</h3>
+<p>The meat of ActivityPub, an activity type represents what <i>action</i> is
+being done. These are the root types that are shared between servers in
+ActivityPub. Some common activiites are:</p>
+<ul>
+<li><span class="code type">Activity</span>: A generic base for other activity
+types. By itself it lacks semantic meaning. Contains a <i>who</i> and a <i>to what</i>
+(in English grammar: Direct Object)
+this activity acts upon. Sometimes specifies a secondary <i>what</i> that is
+being modified (in English grammar: Indirect Object).</li>
+<li><span class="code type">IntransitiveActivity</span>: A generic base for other activity
+types. It extends <span class="code type">Activity</span>, except it only has a
+<i>who</i> and no <i>to what</i>. Sometimes specifies a secondary <i>what</i> that is
+being modified (Indirect Object).</li>
+<li><span class="code type">Create</span>: An actor is creating a new piece of
+content.
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Update</span>: An actor is modifying an existing
+piece of content.
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Delete</span>: An actor is removing an existing
+piece of content
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Follow</span>: An actor is requesting to follow
+another actor.
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Block</span>: An actor is blocking another actor.
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Accept</span>: An actor is accepting something
+(ex: a follow request).
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Reject</span>: An actor is rejecting something
+(ex: a follow request).
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Add</span>: An actor is adding something to
+something else (ex: adding an item to a collection).
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Remove</span>: An actor is removing something from
+something else (ex: removing an item from a collection).
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Like</span>: An actor likes another piece of
+content.
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Undo</span>: An actor is undo-ing a previous
+action (ex: to undo a like as opposed to mistakenly disliking something already
+liked).
+Extends <span class="code type">Activity</span>.
+</li>
+</ul>
+<p>Some key additional properties of
+<span class="code type">Activity</span>
+are:</p>
+<ul>
+<li><i>actor</i>: The actor(s) who is/are performing the activity.</li>
+<li><i>object</i>: The <i>to what</i> (Direct Object) that the activity is
+acting upon (ex: The "note" in "Alex created a note"). Does not exist for
+<span class="code type">IntransitiveActivity</span> types.</li>
+<li><i>target</i>: The secondary <i>what</i> (Indirect Object) that the activity
+is acting upon (ex: The "wishlist" in "Alex added a note to their wishlist").</li>
+</ul>
+<h3>Object/Link Types</h3>
+<p>The
+<span class="code type">Object</span>
+and
+<span class="code type">Link</span>
+types both describe traditional pieces of application data. These are the things
+that actors apply activities on. Note that the
+<span class="code type">Object</span>
+and
+<span class="code type">Link</span>
+types are specifically <i>disjoint</i> in the specification, which just means
+it is illegal to try to combine the two types together. Since there are very few
+interesting types that extend
+<span class="code type">Link</span>,
+let's examine some that extend
+<span class="code type">Object</span>:</p>
+<ul>
+<li><span class="code type">Note</span>: A short piece of text. This is a toot
+in Mastodon, the unit of microblogging.</li>
+<li><span class="code type">Image</span>: An image of any kind.</li>
+<li><span class="code type">Profile</span>: An object that is describing another
+object (typically an actor).</li>
+<li><span class="code type">Tombstone</span>: A placeholder types for content
+that was deleted. Allows preserving existing references without serving 404's.</li>
+<li><span class="code type">Video</span>: A video of any kind.</li>
+<li><span class="code type">Article</span>: A longer piece of text, typically
+two or more paragraphs in length.</li>
+<li><span class="code type">Audio</span>: A piece of audio of any kind.</li>
+</ul>
+<p>Most of these have no new properties besides the ones already provided by
+<span class="code type">Object</span>. 
+<span class="code type">Profile</span> and
+<span class="code type">Tombstone</span> have some additional useful properties.
+When in doubt, check the 
+<a href="https://www.w3.org/TR/activitystreams-vocabulary">ActivityStreams Vocabulary specification</a>.</p>
+<h2 id="ActivityStreams-Serialization">ActivityStreams: Serialization</h2>
+<p>Conversion between a
+<span class="code"><span class="type">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}</span>
+and a concrete type is handled by a combination of the <span class="code">vocab</span>
+and <span class="code">streams</span> packages. Serialization between raw JSON
+(<span class="code">[]<span class="type">byte</span></span>) and 
+<span class="code"><span class="type">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}</span>
+is still handled by the standard
+<span class="code">encoding/json</span>
+library. This means the 
+<span class="code">vocab</span>
+and
+<span class="code">streams</span>
+packages are independent of the wire encoding.</p>
+<p>Fortunately, all of this serialization, deserialization, and conversion is
+routinely handled by the 
+<span class="code">pub</span>
+package, and won't be needed in your routine use of that library. However, it is
+useful to know if you want to convert and encode these types as part of your own
+database schemes (for example, as part of an application's Postgres JSON type).</p>
+<h3>Serialization</h3>
+<p>When given a <span class="code">vocab</span> concrete type, an
+<span class="code type">Activity</span> for example,
+it will satisfy the
+<span class="code type">Serializer</span>
+interface. It doesn't encode directly to JSON, but instead to a
+<span class="code"><span class="type">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}</span>
+which can then be used to encode to JSON:</p>
+<pre><span class="type">type Serializer</span> <span class="keyword">interface</span> {
+	Serialize() (m <span class="type">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}, e <span class="type">error</span>)
+}</pre>
+<p>Storing this JSON can then be done like:</p>
+<pre>v := &amp;vocab.<span class="type">Activity</span>{}
+m, _ := v.Serialize()
+b, _ := json.Marshal(m)</pre>
+<aside class="advanced">
+<h4>Manually Sharing Serialized Objects</h4>
+<p>If planning to share serialized data directly to the outside world without
+using
+<span class="code">pub</span>,
+there is one caveat to calling 
+<span class="code">Serialize</span>.
+This use case should be extremely rare because you're probably trying to one of
+three things. One: you're trying to bypass
+<span class="code">pub</span>
+to do something borderline standard but technically allowed in ActivityPub.
+Or, two: you are trying to propagate ActivityStreams data outside of the
+ActivityPub protocol. Finally, three: you are trying to write your own
+ActivityPub implementation on top of
+<span class="code">vocab</span>.
+</p>
+<p>If the reasoning is the first one, please seriously reconsider the choice to
+bypass
+<span class="code">pub</span>,
+and file an issue against the repository describing what functionality is
+lacking that is causing you to pursue this. In typical ActivityPub usage
+provided by
+<span class="code">pub</span>,
+what follows is unnecessary and won't impact typical usage.</p>
+<p>The caveat: it is up to your
+application to set the
+<span class="code">@context</span>
+correctly. This is because there is no mechanism to detect what kinds of
+ActivityStream extensions you may be using in
+<span class="code">vocab</span>.
+It also does not know if the map
+will be embedded in another map, and therefore automatically adding a
+<span class="code">@context</span>
+would be incorrect.</p>
+<p>Currently, 
+<span class="code">pub</span>
+assumes only the core vocabulary is being used, so it does:</p>
+<pre>v := &amp;vocab.<span class="type">Activity</span>{}
+m, _ := v.Serialize()
+m[<span class="literal">&quot;@context&quot;</span>] = <span class="literal">&quot;https://www.w3.org/ns/activitystreams&quot;</span></pre>
+<p>Again, this use case should be extremely rare in your application. The
+typical functionality in
+<span class="code">pub</span>
+should be sufficient for your typical needs.</p></aside>
+<h3>Deserialization</h3>
+<p>If given a raw set of
+<span class="code">[]<span class="type">byte</span></span>,
+both the
+<span class="code">vocab</span>
+and
+<span class="code">streams</span>
+packages are used to obtain a concrete type. First, decode the bytes to a
+<span class="code"><span class="type">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}</span>
+(with
+<span class="code">encoding/json</span>
+if JSON). OK, that was easy. Now, each 
+<span class="code">vocab</span>
+type implements a 
+<span class="code type">Deserializer</span>
+interface:</p>
+<pre><span class="type">type Deserializer</span> <span class="keyword">interface</span> {
+	Deserialize(m <span class="type">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}) (e <span class="type">error</span>)
+}</pre>
+<p>But the difficult question is: which 
+<span class="code">vocab</span>
+type should this map deserialize to?
+<span class="code type">Activity</span>?
+<span class="code type">Note</span>?
+</p>
+<p>Enter
+<span class="code">Resolver</span>
+in the
+<span class="code">streams</span>
+package. It detects the correct type and calls a callback into your code with
+the concrete type deserialized:
+<pre><span class="type">type Resolver</span> <span class="keyword">struct</span> {
+	ObjectCallback <span class="type">func</span>(*<span class="type">Object</span>) <span class="type">error</span>
+	LinkCallback <span class="type">func</span>(*<span class="type">Link</span>) <span class="type">error</span>
+	ActivityCallback <span class="type">func</span>(*<span class="type">Activity</span>) <span class="type">error</span>
+	CreateCallback <span class="type">func</span>(*<span class="type">Create</span>) <span class="type">error</span>
+	AnyObjectCallback <span class="type">func</span>(*vocab.<span class="type">ObjectType</span>) <span class="type">error</span>
+	AnyLinkCallback <span class="type">func</span>(*vocab.<span class="type">LinkType</span>) <span class="type">error</span>
+	AnyActivityCallback <span class="type">func</span>(*vocab.<span class="type">ActivityType</span>) <span class="type">error</span>
+	<span class="comment">// etc...</span>
+}
+
+func (t *<span class="type">Resolver</span>) Deserialize(m <span class="type">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}) (err <span class="type">error</span>) {
+	<span class="comment">// Call the correct callbacks.</span>
+}</pre>
+<p>You do not need to set all of these callbacks to use the
+<span class="code">Resolver</span>. Only set the ones you care about. It is OK
+for ActivityPub implementations to ignore types that they are not meant to
+handle. The giant list of all types is provided for flexibility, but can 
+definitely seem intimidating.</p>
+<p>The specific callbacks use the objects from the
+<span class="code">stream</span>
+package, not the objects from the
+<span class="code">vocab</span>
+package. On the other hand, the &quot;Any&quot; callbacks use interfaces from
+the
+<span class="code">vocab</span>
+package.</p>
+<p>The callbacks with the &quot;Any&quot; prefix will be called in addition to
+the specific callback, based on the &quot;extends&quot; concept defined in the
+ActivityStreams specification. For example, when deserializing a
+<span class="code">Note</span>,
+the
+<span class="code">NoteCallback</span> and
+<span class="code">AnyObjectCallback</span>
+will be called since a
+<span class="code">Note</span>
+ultimately is extended from an
+<span class="code">Object</span>.
+<aside class="caution"><p>
+Be careful mixing specific callbacks and callbacks with the
+&quot;Any&quot; prefix. This can result in multiple callbacks getting called
+at once when you may be expecting only one callback to be called.
+</p></aside>
+<p>Putting all of this together, deserializing would look like:</p>
+<pre><span class="type">func</span> myNoteHandler(note *streams.<span class="type">Note</span>) <span class="type">error</span> {
+	<span class="comment">// Use 'note' in your application</span>
+}
+
+<span class="type">func</span> myDeserializeFunc(b []<span class="type">byte</span>) <span class="type">error</span> {
+	r := &amp;streams.<span class="type">Resolver</span> {
+		NoteCallback: myNoteHandler,
+	}
+	var m <span class="type">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}
+	<span class="keyword">if</span> e := json.Unmarshal(b, &amp;m); e != <span class="literal">nil</span> {
+		<span class="keyword">return</span> e
+	}
+	<span class="keyword">return</span> r.Deserialize(m)
+}</pre>
+<h2 id="ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</h2>
+<p>While ActivityStreams defines the data structures being passed around, the
+ActivityPub protocol defines key behaviors to get very different applications
+to behave well together. While the SocialAPI and FederateAPI are different in
+such behaviors, there are a lot of common concepts. In this section, we will go
+over these common concepts that will be used regardless which API you ultimately
+will use for your application.</p>
+<p>Before we begin, understand that abstracting the ActivityPub protocol from
+an application is very difficult. However, 
+<span class="code">pub</span>
+is able to handle a lot of the default lifting for you, and follows a "just
+works" mentality while providing you with as much specification-compliant
+flexibility as possible. Don't get discouraged from rapidly prototyping, but
+understand this takes some serious effort to get right. And this library is
+geared towards the latter.</p>
+<aside class="best">If at any time you wish to provide feedback on the library
+or discover unexpected behavior, please file an
+<a href="https://github.com/go-fed/activity/issues/new/choose">issue</a>!
+</aside>
+<p>Firstly, the application needs to be able to fetch the current time. Rather
+than bake in calls to 
+<span class="code">time.Now</span>, you will need to provide a simple clock type:</p>
+<pre><span class="keyword">type</span> <span class="type">Clock</span> <span class="keyword">interface</span> {
+	Now() time.<span class="type">Time</span>
+}</pre>
+<p>Next is the meat of your application. Overall, it needs to be able to handle
+the following responsibilities regardless of which API you use:</p>
+<ul>
+<li>Determining if it owns an IRI</li>
+<li>Getting ActivityStream content (both as verified or unverified user)</li>
+<li>Determining if it has ActivityStream data at an IRI</li>
+<li>Setting ActivityStream data</li>
+<li>Getting an actor's outbox or inbox</li>
+<li>Creating new ids</li>
+<li>Obtaining the public key for another user for verification purposes</li>
+<li>Whether adding/removing is permitted</li>
+</ul>
+<p>These responsibilities map to the following interface (comments differ from
+the actual documentation):</p>
+<pre><span class="keyword">type</span> <span class="type">Application</span> <span class="keyword">interface</span> {
+	<span class="comment">// Determines whether the application owns an IRI</span>
+	Owns(c context.<span class="type">Context</span>, id *url.<span class="type">URL</span>) <span class="type">bool</span>
+	<span class="comment">// Gets ActivityStream content</span>
+	Get(c context.<span class="type">Context</span>, id *url.<span class="type">URL</span>, rw <span class="type">RWType</span>) (<span class="type">PubObject</span>, <span class="type">error</span>)
+	GetAsVerifiedUser(c context.<span class="type">Context</span>, id, authdUser *url.<span class="type">URL</span>, rw <span class="type">RWType</span>) (<span class="type">PubObject</span>, <span class="type">error</span>)
+	<span class="comment">// Determines if it has ActivityStream data at the IRI</span>
+	Has(c context.<span class="type">Context</span>, id *url.<span class="type">URL</span>) (<span class="type">bool</span>, <span class="type">error</span>)
+	<span class="comment">// Setting ActivityStream data</span>
+	Set(c context.<span class="type">Context</span>, o <span class="type">PubObject</span>) <span class="type">error</span>
+	<span class="comment">// Getting an actor's outbox or inbox</span>
+	GetInbox(c context.<span class="type">Context</span>, r *http.<span class="type">Request</span>, rw <span class="type">RWType</span>) (vocab.<span class="type">OrderedCollectionType</span>, <span class="type">error</span>)
+	GetOutbox(c context.<span class="type">Context</span>, r *http.<span class="type">Request</span>, rw <span class="type">RWType</span>) (vocab.<span class="type">OrderedCollectionType</span>, <span class="type">error</span>)
+	<span class="comment">// Creating new ids</span>
+	NewId(c context.<span class="type">Context</span>, t <span class="type">Typer</span>) *url.<span class="type">URL</span>
+	<span class="comment">// Obtaining the public key for another user for verification purposes</span>
+	GetPublicKey(c context.<span class="type">Context</span>, publicKeyId <span class="type">string</span>) (pubKey crypto.<span class="type">PublicKey</span>, algo httpsig.<span class="type">Algorithm</span>, user *url.<span class="type">URL</span>, err <span class="type">error</span>)
+	<span class="comment">// Whether adding/removing is permitted</span>
+	CanAdd(c context.<span class="type">Context</span>, o vocab.<span class="type">ObjectType</span>, t vocab.<span class="type">ObjectType</span>) <span class="type">bool</span>
+	CanRemove(c context.<span class="type">Context</span>, o vocab.<span class="type">ObjectType</span>, t vocab.<span class="type">ObjectType</span>) <span class="type">bool</span>
+}</pre>
+<p>Whew! That's the bulk of the work in writing an ActivityPub application right
+there. Once implemented, your application will be able to handle the basic
+behaviors for common activity types as outlined in the ActivityPub
+specification.</p>
+<p>Those of you that are observant may have noticed that there are a few other
+types referenced:</p>
+<ul>
+<li><span class="code type">RWType</span>: Whether the read is part of a
+read-only or read-write operation, which should impact any atomic locking
+designs to avoid data race conditions.</li>
+<li><span class="code type">PubObject</span>: All <span class="code">vocab</span>
+ActivityStreams types satisfy this interface as it contains the <i>id</i> and
+<i>type</i> properties' methods.</li>
+<li><span class="code type">Typer</span>: All <span class="code">vocab</span>
+ActivityStreams types satisfy this interface as it contains the <i>type</i>
+property methods.</li>
+<li><span class="code">httpsig.<span class="type">Algorithm</span></span>:
+This library depends on the <span class="code">github.com/go-fed/httpsig</span>
+library, which requires an algorithm.</li>
+</ul>
+<aside class="best">Use <span class="code">httpsig.RSA_SHA256</span> for the <span class="code">httpsig.<span class="type">Algorithm</span></span> to be compatible with the fediverse.</aside>
+<p>Now that the hard part is over, you optionally can implement another
+interface: the
+<span class="code type">Callbacker</span>.
+You will need one for either the SocialAPI or FederateAPI, but if you choose to
+implement both you will need two.</p>
+<p>The
+<span class="code type">Callbacker</span>
+is where the real customization for your application can take place. Whenever
+one of its supported activity types is sent to your server, these callback
+functions will be invoked. Since the basic behaviors are already handled for
+you, you can focus on the custom behavior. For example, a
+<span class="code type">Create</span> will already properly call your
+application's functions as needed, so in the
+<span class="code type">Callbacker</span>
+you could have it detect if it was trying to create an
+<span class="code type">Article</span>
+and just have it automatically syndicate it to a proprietary social network,
+for example. The precise default behavior provided for you will be explored
+in depth in the API specific sections. The
+<span class="code type">Callbacker</span>
+looks like:</p>
+<pre><span class="keyword">type</span> <span class="type">Callbacker</span> <span class="keyword">interface</span> {
+	Create(c context.<span class="type">Context</span>, s *streams.<span class="type">Create</span>) <span class="type">error</span>
+	Update(c context.<span class="type">Context</span>, s *streams.<span class="type">Update</span>) <span class="type">error</span>
+	Delete(c context.<span class="type">Context</span>, s *streams.<span class="type">Delete</span>) <span class="type">error</span>
+	Add(c context.<span class="type">Context</span>, s *streams.<span class="type">Add</span>) <span class="type">error</span>
+	Remove(c context.<span class="type">Context</span>, s *streams.<span class="type">Remove</span>) <span class="type">error</span>
+	Like(c context.<span class="type">Context</span>, s *streams.<span class="type">Like</span>) <span class="type">error</span>
+	Block(c context.<span class="type">Context</span>, s *streams.<span class="type">Block</span>) <span class="type">error</span>
+	Follow(c context.<span class="type">Context</span>, s *streams.<span class="type">Follow</span>) <span class="type">error</span>
+	Undo(c context.<span class="type">Context</span>, s *streams.<span class="type">Undo</span>) <span class="type">error</span>
+	Accept(c context.<span class="type">Context</span>, s *streams.<span class="type">Accept</span>) <span class="type">error</span>
+	Reject(c context.<span class="type">Context</span>, s *streams.<span class="type">Reject</span>) <span class="type">error</span>
+}</pre>
+<p>A default implementation that does nothing for all
+callbacks is perfectly valid since the ActivityPub required behavior is handled
+for you by default.</p>
+<aside class="caution">Note that these callbacks are given
+<span class="code">stream</span>
+types. These types are at risk of being deprecated in a future major
+release, so upon receiving a
+<span class="code">stream</span>
+object, obtain the
+<span class="code">vocab</span>
+version by simply calling:
+<span class="code">v := s.Raw()</span></aside>
+<p>Now that you have the basics, it is time to explore the specific requirements
+for each of the APIs in ActivityPub.</p>
+<h2 id="ActivityPub-SocialAPI">ActivityPub: SocialAPI (Client to Server)</h2>
+<h2 id="ActivityPub-FederateAPI">ActivityPub: FederateAPI (Server to Server)</h2>
+<h2 id="References">References</h2>
+<p>These are the references I used or referred to when building all libraries within
+the go-fed organization, including but not limited to the
+<span class="code">go-fed/activity</span> library.</p>
+<p>W3C Specifications:</p>
+<ul>
+<li><a href="https://www.w3.org/TR/social-web-protocols/">Social Web Protocols</a></li>
+<li><a href="https://www.w3.org/TR/activitypub">The ActivityPub Specification</a></li>
+<li><a href="https://www.w3.org/TR/activitystreams-core">The ActivityStreams Core Specification</a></li>
+<li><a href="https://www.w3.org/TR/activitystreams-vocabulary">The ActivityStreams Vocabulary</a></li>
+<li><a href="https://www.w3.org/ns/activitystreams">ActivityStream 2.0 Terms</a></li>
+<li><a href="https://www.w3.org/TR/json-ld">The JSON-LD Specification</a></li>
+</ul>
+<p>RFCs:</p>
+<ul>
+<li><a href="https://tools.ietf.org/html/rfc3987">RFC 3987: Internationalized Resource Identifiers (IRIs)</a></li>
+<li><a href="https://tools.ietf.org/html/rfc7033">RFC 7033: Webfinger</a></li>
+<li><a href="https://tools.ietf.org/html/rfc3230">RFC 3230: Instance Digests in HTTP</a></li>
+<li><a href="https://tools.ietf.org/html/rfc6749">RFC 6749: The OAuth 2.0 Authorization Framework</a></li>
+<li><a href="https://tools.ietf.org/html/rfc6750">RFC 6750: The OAuth 2.0 Authorization Framework: Bearer Token Usage</a></li>
+<li><a href="https://tools.ietf.org/html/draft-cavage-http-signatures-10">DRAFT: Signing HTTP Messages</a></li>
+</ul>
+<p>Other documents and links:</p>
+<ul>
+<li><a href="https://www.w3.org/wiki/SocialCG/ActivityPub/Authentication_Authorization">ActivityPub Authentication And Authorization Conventions</a></li>
+<li><a href="https://github.com/w3c/activitystreams">Github Repo for W3C ActivityStreams</a></li>
+<li><a href="https://github.com/w3c/activitypub">Github Repo for W3C ActivityPub</a></li>
+<li><a href="https://github.com/w3c-dvcg/http-signatures">Github Repo for W3C Draft of HTTP Signatures</a></li>
+</ul>
 {{template "footer" .C}}{{end}}
 
 {{/* ALL REPOS TEMPLATE */}}
