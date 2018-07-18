@@ -327,6 +327,7 @@ tinker with the library while evolving specifications.</p></aside>
 <li><a href="#ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</a></li>
 <li><a href="#ActivityPub-SocialAPI">ActivityPub: SocialAPI (Client to Server)</a></li>
 <li><a href="#ActivityPub-FederateAPI">ActivityPub: FederateAPI (Server to Server)</a></li>
+<li><a href="#ActivityPub-Both-APIs">ActivityPub: Both APIs (Client to Server &amp; Server to Server)</a></li>
 <li><a href="#References">References</a></li>
 </ol>
 <h2 id="Prerequisites">Prerequisites</h2>
@@ -918,6 +919,14 @@ geared towards the latter.</p>
 or discover unexpected behavior, please file an
 <a href="https://github.com/go-fed/activity/issues/new/choose">issue</a>!
 </aside>
+<p>There are two big key things your application needs to accomplish, that this
+library will do for you:</p>
+<ul>
+<li>Handle an actor's inbox and outbox calls (for the SocialAPI, FederateAPI, or both)</li>
+<li>Handle serving an ActivityStreams object in its raw form</li>
+</ul>
+<p>Before we can tackle these big items, we need to implement some interfaces
+so that the library can do these default behaviors for you.</p>
 <p>Firstly, the application needs to be able to fetch the current time. Rather
 than bake in calls to 
 <span class="code">time.Now</span>, you will need to provide a simple clock type:</p>
@@ -1026,10 +1035,315 @@ object, obtain the
 <span class="code">vocab</span>
 version by simply calling:
 <span class="code">v := s.Raw()</span></aside>
+<p>Now that these interfaces are implemented, you can create a
+<span class="code type">Pubber</span>
+type. What does this do for you? Why use a funky naming thing? Why am I talking
+to myself? Well, it handles HTTP requests to an actor's inbox or outbox and
+carries out the ActivityPub-specific behavior required for the API(s) you wish
+to support. This is one of the two big behaviors mentioned at the beginning of
+this section. To get a
+<span class="code type">Pubber</span>
+requires calling a constructor.
+The exact constructor you call depends on which API(s) you wish to
+support, and so this will be addressed in the sections below. For now, let's
+assume you've already done that and have a shiny new
+<span class="code type">Pubber</span>
+ready to get going.</p>
+<p>What can you do with a
+<span class="code type">Pubber</span>?
+Well, it's API is straightforward:</p>
+<pre><span class="keyword">type</span> <span class="type">Pubber</span> <span class="keyword">interface</span> {
+	<span class="comment">// Handle a HTTP request to an actor's inbox</span>
+	PostInbox(c context.<span class="type">Context</span>, w http.<span class="type">ResponseWriter</span>, r *http.<span class="type">Request</span>) (<span class="type">bool</span>, <span class="type">error</span>)
+	GetInbox(c context.<span class="type">Context</span>, w http.<span class="type">ResponseWriter</span>, r *http.<span class="type">Request</span>) (<span class="type">bool</span>, <span class="type">error</span>)
+	<span class="comment">// Handle a HTTP request to an actor's outbox</span>
+	PostOutbox(c context.<span class="type">Context</span>, w http.<span class="type">ResponseWriter</span>, r *http.<span class="type">Request</span>) (<span class="type">bool</span>, <span class="type">error</span>)
+	GetOutbox(c context.<span class="type">Context</span>, w http.<span class="type">ResponseWriter</span>, r *http.<span class="type">Request</span>) (<span class="type">bool</span>, <span class="type">error</span>)
+}</pre>
+<p>So whatever handler you have to handle an actor's inbox or outbox would look
+similar to this:</p>
+<pre><span class="comment">// Given:</span>
+<span class="comment">//     var myPubber pub.Pubber</span>
+var outboxHandler http.<span class="type">HandlerFunc</span> = <span class="type">func</span>(w http.<span class="type">ResponseWriter</span>, r *http.<span class="type">Request</span>) {
+	c := context.Background()
+	<span class="comment">// Populate c with application specific information here</span>
+	<span class="comment">// ...</span>
+	if handled, err := myPubber.PostOutbox(c, w, r); err != <span class="literal">nil</span> {
+	  <span class="comment">// Write to w</span>
+	} else if handled {
+	  return
+	}
+	if handled, err := myPubber.GetOutbox(c, w, r); err != <span class="literal">nil</span> {
+	  <span class="comment">// Write to w</span>
+	} else if handled {
+	  return
+	}
+	<span class="comment">// Handle non-ActivityPub request, such as responding with an HTML</span>
+	<span class="comment">// representation with correct view permissions.</span>
+}
+var inboxHandler http.<span class="type">HandlerFunc</span> = func(w http.<span class="type">ResponseWriter</span>, r *http.<span class="type">Request</span>) {
+	c := context.Background()
+	<span class="comment">// Populate c with application specific information here</span>
+	<span class="comment">// ...</span>
+	if handled, err := myPubber.PostInbox(c, w, r); err != <span class="literal">nil</span> {
+	  <span class="comment">// Write to w</span>
+	} else if handled {
+	  return
+	}
+	if handled, err := myPubber.GetInbox(c, w, r); err != <span class="literal">nil</span> {
+	  <span class="comment">// Write to w</span>
+	} else if handled {
+	  return
+	}
+	<span class="comment">// Handle non-ActivityPub request, such as responding with an HTML</span>
+	<span class="comment">// representation with correct view permissions.</span>
+}</pre>
+<p>That handles one of the two big behaviors! The other behavior is to handle
+serving the raw
+ActivityStream data at the URL endpoint that matches its <i>id</i> property.
+There are two ways to do this: one function provides default HTTP Signature
+checking, and the other lets you use your own custom
+authentication/authorization method:</p>
+<pre><span class="comment">// Given:</span>
+<span class="comment">//     var myApp pub.Application</span>
+<span class="comment">//     var myClock pub.Clock</span>
+<span class="comment">//     var myVerifier pub.SocialAPIVerifier - This type to be discussed in a later section</span>
+var myPubHandler pub.<span class="type">HandlerFunc</span> = pub.ServeActivityPubObject(myApp, myClock)
+<span class="comment">// Alternatively:</span>
+myVerifierFactory = <span class="type">func</span>(c context.<span class="type">Context</span>) pub.<span class="type">SocialAPIVerifier</span> {
+	<span class="comment">// ...</span>
+	<span class="keyword">return</span> myVerifier
+}
+var myCustomVerifiedPubHandler pub.<span class="type">HandlerFunc</span> = pub.ServeActivityPubObjectWithVerificationMethod(myApp, myClock, myVerifierFactory)
+<span class="comment">// Serve ActivityStreams objects:</span>
+var serveIRIHandler http.<span class="type">HandlerFunc</span> = <span class="type">func</span>(w http.<span class="type">ResponseWriter</span>, r *http.<span class="type">Request</span>) {
+	c := context.Background()
+	<span class="comment">// Populate c with application specific information here</span>
+	<span class="comment">// ...</span>
+	if handled, err := myPubHandler(c, w, r) <span class="comment">/* or myCustomVerifiedPubHandler */</span>; err != <span class="literal">nil</span> {
+	  	  <span class="comment">// Write to w</span>
+	} else if handled {
+	  return
+	}
+	<span class="comment">// Handle non-ActivityPub request, such as responding with an HTML</span>
+	<span class="comment">// representation with correct view permissions.</span>
+}</pre>
+<p>And that's about all it takes to hook ActivityPub behaviors into your new or
+existing application!</p>
 <p>Now that you have the basics, it is time to explore the specific requirements
-for each of the APIs in ActivityPub.</p>
+and specific default behaviors
+for each of the APIs in ActivityPub. As well as how to create the
+<span class="code type">Pubber</span>
+type.</p>
 <h2 id="ActivityPub-SocialAPI">ActivityPub: SocialAPI (Client to Server)</h2>
+<p>The SocialAPI provides the following default behaviors for the following
+activities (heavily summarized):</p>
+<ul>
+<li><span class="code type">Create</span>: Creating a new <i>id</i> and setting the new object in the <span class="code type">Application</span></li>
+<li><span class="code type">Update</span>: Partially updating an existing object</li>
+<li><span class="code type">Delete</span>: Setting an existing object as a <span class="code type">Tombstone</span></li>
+<li><span class="code type">Add</span>: Adds an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it</li>
+<li><span class="code type">Remove</span>: Removes an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it</li>
+<li><span class="code type">Like</span>: Adds a like to the appropriate <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span></li>
+</ul>
+<aside class="best">Customize these behaviors by implementing a
+<span class="code type">Callbacker</span>! Call your local salesperson today!</aside>
+<p>Now, to obtain a
+<span class="code type">Pubber</span>
+you will need to call:</p>
+<pre><span class="type">func</span> NewSocialPubber(clock <span class="type">Clock</span>, app <span class="type">SocialApplication</span>, cb <span class="type">Callbacker</span>) <span class="type">Pubber</span></pre>
+<p>You should have the
+<span class="code type">Clock</span>
+and
+<span class="code type">Callbacker</span>
+from the previous section:
+<a href="#ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</a>.
+However, the
+<span class="code type">SocialApplication</span>
+is defined as:</p>
+<pre><span class="keyword">type</span> <span class="type">SocialApplication</span> <span class="keyword">interface</span> {
+	<span class="type">Application</span>
+	<span class="type">SocialAPI</span>
+}</pre>
+<p>And since you already have an
+<span class="code type">Application</span>
+you just have to implement the methods in
+<span class="code type">SocialAPI</span>,
+which provides the following necessary behaviors for this library:</p>
+<ul>
+<li>Determine the actor's id for a given HTTP request, typically by examining the request URL path.</li>
+<li>Optionally use a custom authentication/authorization method besides HTTP Signatures (the default)</li>
+<li>Obtain a public key for an actor's outbox to ensure the user is authentic when verifying with HTTP Signatures (the default)</li>
+</ul>
+<p>This is how it looks as an interface (comments differ from the source):</p>
+<pre><span class="keyword">type</span> <span class="type">SocialAPI</span> <span class="keyword">interface</span> {
+	<span class="comment">// Determine an actor's id</span>
+	ActorIRI(c context.<span class="type">Context</span>, r *http.<span class="type">Request</span>) (*url.<span class="type">URL</span>, <span class="type">error</span>)
+	<span class="comment">// Optional authentication/authorization scheme</span>
+	GetSocialAPIVerifier(c context.<span class="type">Context</span>) <span class="type">SocialAPIVerifier</span>
+	<span class="comment">// Gets an actor's public key for verifying incoming messages</span>
+	GetPublicKeyForOutbox(c context.<span class="type">Context</span>, publicKeyId <span class="type">string</span>, boxIRI *url.<span class="type">URL</span>) (crypto.<span class="type">PublicKey</span>, httpsig.<span class="type">Algorithm</span>, <span class="type">error</span>)
+}</pre>
+<p>This introduces us to our final interface:
+<span class="code type">SocialAPIVerifier</span>,
+It is only necessary if you want to implement OAuth 2.0 or some other
+authentication/authorization scheme besides the default HTTP Signatures.
+It's interface is simple but nuanced:</p>
+<pre><span class="keyword">type</span> <span class="type">SocialAPIVerifier</span> <span class="keyword">interface</span> {
+	Verify(r *http.<span class="type">Request</span>) (authenticatedUser *url.<span class="type">URL</span>, authn, authz <span class="type">bool</span>, err <span class="type">error</span>)
+	VerifyForOutbox(r *http.<span class="type">Request</span>, outbox *url.<span class="type">URL</span>) (authn, authz <span class="type">bool</span>, err <span class="type">error</span>)
+}</pre>
+<aside class="caution">Check the documentation to ensure that the returned
+results will behave in the manner you expect!</aside>
+<p>That's it! With your knowledge from this section as well as the
+<a href="#ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</a>
+section, you are good to build an application using ActivityPub's SocialAPI protocol.</p>
 <h2 id="ActivityPub-FederateAPI">ActivityPub: FederateAPI (Server to Server)</h2>
+<p>The FederateAPI provides the following default behaviors for the following
+activities (heavily summarized):</p>
+<ul>
+<li><span class="code type">Create</span>: Sets a new object on the <span class="code type">Application</span></li>
+<li><span class="code type">Update</span>: Replaces an existing object in the <span class="code type">Application</span></li>
+<li><span class="code type">Delete</span>: Turns an existing object into a <span class="code type">Tombstone</span></li>
+<li><span class="code type">Follow</span>: Adds to a followers <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span> if auto-approve or auto-reject is enabled.</li>
+<li><span class="code type">Accept</span>:Adds to a following <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span> if a <span class="code type">Follow</span> was accepted.</li>
+<li><span class="code type">Add</span>: Adds an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it</li>
+<li><span class="code type">Remove</span>: Removes an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it</li>
+<li><span class="code type">Like</span>: Adds a like to the appropriate <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span></li>
+</ul>
+<aside class="best">Customize these behaviors by implementing a
+<span class="code type">Callbacker</span>! Call your local salesperson today!</aside>
+<p>This will let you federate with peer servers, but without the SocialAPI
+your application will presumably need some other mechanism for users to create
+content. Once created, this library will take care of federating with peers.</p>
+<p>It also solves the "ghost replies" problem for you. This is when Alex
+publicly replies to a message from Addison, but the message is not forwarded
+to Addison's followers. If Addison then replies again, her followers would see
+Addison's original message and reply, but not Alex's reply in the middle. This
+library solves that problem for you by having Addison's server forward Alex's
+message to Addison's followers.</p>
+<p>To obtain a
+<span class="code type">Pubber</span>
+you will need to call:</p>
+<pre><span class="type">func</span> NewFederatingPubber(clock <span class="type">Clock</span>, app <span class="type">FederateApplication</span>, cb <span class="type">Callbacker</span>, d <span class="type">Deliverer</span>, client <span class="type">HttpClient</span>, userAgent <span class="type">string</span>, maxDeliveryDepth, maxForwardingDepth <span class="type">int</span>) <span class="type">Pubber</span></pre>
+<p>You should have the
+<span class="code type">Clock</span>
+and
+<span class="code type">Callbacker</span>
+from the previous section:
+<a href="#ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</a>.
+It also requires a
+<span class="code type">FederateApplication</span>,
+<span class="code type">Deliverer</span>,
+<span class="code type">HttpClient</span>,
+<span class="code">userAgent</span>,
+<span class="code">maxDeliveryDepth</span>, and
+<span class="code">maxForwardingDepth</span>.
+The
+<span class="code type">FederateApplication</span>
+is defined as:</p>
+<pre><span class="keyword">type</span> <span class="type">FederateApplication</span> <span class="keyword">interface</span> {
+	<span class="type">Application</span>
+	<span class="type">FederateAPI</span>
+}</pre>
+<p>And since you already have an
+<span class="code type">Application</span>
+you just have to implement the methods in
+<span class="code type">FederateAPI</span>,
+which provides the following necessary behaviors for this library:</p>
+<ul>
+<li>How to handle follow requests (auto-approve, auto-reject, manually decide)</li>
+<li>Whether an interaction should be blocked</li>
+<li>Filter recipients when forwarding messages in order to avoid "ghost replies"</li>
+<li>Sign federated messages with HTTP Signatures</li>
+<li>Obtain private and public keys for proper signing</li>
+</ul>
+<p>This is how it looks as an interface (comments differ from the source):</p>
+<pre><span class="keyword">type</span> <span class="type">FederateAPI</span> <span class="keyword">interface</span> {
+	<span class="comment">// How to handle follow requests (auto-approve, auto-reject, manually decide)</span>
+	OnFollow(c context.<span class="type">Context</span>, s *streams.<span class="type">Follow</span>) <span class="type">FollowResponse</span>
+	<span class="comment">// Whether an interaction should be blocked</span>
+	Unblocked(c context.<span class="type">Context</span>, actorIRIs []*url.<span class="type">URL</span>) <span class="type">error</span>
+	<span class="comment">// Filter recipients when forwarding messages in order to avoid "ghost replies"</span>
+	FilterForwarding(c context.<span class="type">Context</span>, activity vocab.<span class="type">ActivityType</span>, iris []*url.<span class="type">URL</span>) ([]*url.<span class="type">URL</span>, <span class="type">error</span>)
+	<span class="comment">// Sign federated messages with HTTP Signatures</span>
+	NewSigner() (httpsig.<span class="type">Signer</span>, <span class="type">error</span>)
+	<span class="comment">// Obtain private and public keys for proper signing</span>
+	PrivateKey(boxIRI *url.<span class="type">URL</span>) (privKey crypto.<span class="type">PrivateKey</span>, pubKeyId <span class="type">string</span>, err <span class="type">error</span>)
+}</pre>
+<aside class="caution">You must apply some sort of filtering mechanism
+in the <span class="code">FilterForwarding</span> method or else your
+application is at risk of becoming a source for unintentional DDOSing
+of peers. A simple filter would be: ensure all
+<span class="code">iris</span> are followers of the <i>to</i> and
+<i>cc</i> recipients on the <span class="code">Activity</span>.</aside>
+<p>Next is the
+<span class="code type">Deliverer</span>.
+Since this library is sending HTTP requests on your application's behalf, there
+needs to be some way to handle retries, backing off, and persistent state if a
+request needs to be retried after downtime. The
+<span class="code type">Deliverer</span>
+implementation you write can be as fancy as you wish:</p>
+<pre><span class="keyword">type</span> <span class="type">Deliverer</span> <span class="keyword">interface</span> {
+	Do(b []<span class="type">byte</span>, to *url.<span class="type">URL</span>, toDo <span class="type">func</span>(b []<span class="type">byte</span>, u *url.<span class="type">URL</span>) <span class="type">error</span>)
+}</pre>
+<p>The naive implementation is simply:</p>
+<pre><span class="keyword">type</span> <span class="type">NaiveDeliverer</span> <span class="keyword">struct</span> {}
+
+<span class="type">func</span> (d *<span class="type">NaiveDeliverer</span>) Do(b []<span class="type">byte</span>, to *url.<span class="type">URL</span>, toDo <span class="type">func</span>(b []<span class="type">byte</span>, u *url.<span class="type">URL</span>) <span class="type">error</span>) {
+	_ = toDo(b, to)
+}</pre>
+<p>The final new type is the
+<span class="code type">HttpClient</span>.
+Since this library is sending HTTP requests on your application's behalf, you
+remain in full control of the actual HTTP delivery mechanism. It should be no
+surprise that
+<span class="code">http.<span class="type">Client</span></span>
+implements this interface:</p>
+<pre><span class="keyword">type</span> <span class="type">HttpClient</span> <span class="keyword">interface</span> {
+	Do(req *http.<span class="type">Request</span>) (*http.<span class="type">Response</span>, <span class="type">error</span>)
+}</pre>
+<p>The final options in the call to
+<span class="code">NewFederatingPubber</span>
+are settings used to govern details in the behavior of your application:</p>
+<ul>
+<li><span class="code">userAgent</span>: Your application-specific string to be included in the user agent. The go-fed library includes itself as well.</li>
+<li><span class="code">maxDeliveryDepth</span>: The maximum recursive iterations when resolving inboxes (must be &gt;= 1)</li>
+<li><span class="code">maxForwardingDepth</span>: The maximum recursive iterations when looking to forward messages to avoid the "ghost reply" problem (must be &gt;= 1)</li>
+</ul>
+<p>And with that, you have your
+<span class="code">Pubber</span>
+and a way to federate! With this section as well as the
+<a href="#ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</a>
+section, you can build an application using ActivityPub's FederateAPI protocol.</p>
+<h2 id="ActivityPub-Both-APIs">ActivityPub: Both APIs (Client to Server &amp; Server to Server)</h2>
+<p>Surprise, you can implement both the SocialAPI and FederateAPI portions of
+ActivityPub using this library! Unsurprisingly, the way to create a
+<span class="code type">Pubber</span>
+in this case is both of the
+<span class="code">NewSocialPubber</span> and
+<span class="code">NewFederatingPubber</span>
+functions squished into one. <i>Squish</i> is a highly technical term:</p>
+<pre>NewPubber(clock <span class="type">Clock</span>, app <span class="type">SocialFederateApplication</span>, client, server <span class="type">Callbacker</span>, d <span class="type">Deliverer</span>, httpClient <span class="type">HttpClient</span>, userAgent <span class="type">string</span>, maxDeliveryDepth, maxForwardingDepth <span class="type">int</span>) <span class="type">Pubber</span></pre>
+<p>The
+<span class="code type">SocialFederateApplication</span>
+type is simply:</p>
+<pre><span class="keyword">type</span> <span class="type">SocialFederateApplication</span> <span class="keyword">interface</span> {
+	<span class="type">Application</span>
+	<span class="type">SocialAPI</span>
+	<span class="type">FederateAPI</span>
+}</pre>
+<p>Follow the guidance in the other two sections to know more about these
+parameters and their types:</p>
+<ul>
+<li><a href="#ActivityPub-SocialAPI">ActivityPub: Social API</a></li>
+<li><a href="#ActivityPub-FederateAPI">ActivityPub: Federate API</a></li>
+</ul>
+<aside class="caution">There are <b>two</b> <span class="code type">Callbacker</span>
+objects required when using both APIs. This lets you distinguish between an
+Activity being received by a user via the SocialAPI (<span class="code">client</span>)
+one being received from a peer via the FederateAPI (<span class="code">server</span>),
+as you will want to treat these use cases differently.</aside>
 <h2 id="References">References</h2>
 <p>These are the references I used or referred to when building all libraries within
 the go-fed organization, including but not limited to the
