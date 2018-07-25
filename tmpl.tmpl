@@ -309,10 +309,10 @@ JSON-LD, or RDF.</p>
 <span class="code">0.x</span> to create an application that implements ActivityPub in Go.<p>
 <p>You will also see these scattered thoughout the tutorial:</p>
 <aside class="best"><p>These boxes will call out suggested best practices
-when using this library!</p></aside>
+when using this library.</p></aside>
 <aside class="caution"><p>These boxes will call out things that might lead to
-unexpected behaviors in code! They will also call out APIs that are at risk of
-changing in the next major version release!</p></aside>
+unexpected behaviors in code. They will also call out APIs that are at risk of
+changing in the next major version release.</p></aside>
 <aside class="advanced"><p>These boxes contain information I feel the need to
 call out for strange use cases. They are not needed in
 typical use cases, and are targeted towards those who are probably looking to
@@ -412,7 +412,7 @@ further discussions with others I belive it has failed in
 its mission of being a simpler design. The <span class="code">streams</span>
 package provides a <span class="code">Resolver</span>
 type which is recommended for use, but the use of its types is discouraged and the
-types may be removed in future major versions.</p>
+types may be removed in a major version release.</p>
 <p>Everything under <span class="code">tools</span> is used to code-generate the
 <span class="code">vocab</span> and <span class="code">streams</span>
 implementation. It is ignorable for daily development.</p>
@@ -426,7 +426,7 @@ Activity, and Object/Link. All of these concepts dictate what data they are
 allowed to have and how to interpret such data. These are known in the
 ActivityStreams parlance as properties.</p>
 <p>Since the <span class="code type">Object</span> type is a popular choice for
-other types to extend from, we will address it and its properties first</p>
+other types to extend from, we will address it and its properties first.</p>
 <h3>A Deep Dive Example: The Object Type</h3>
 <p>An 
 <span class="code type">Object</span>
@@ -452,7 +452,7 @@ the <i>mediaType</i> property can indicate a different format (ex: markdown).</l
 <li><i>cc</i>: Additional public audience for the object.</li>
 <li><i>bcc</i>: Additional private audience for the object.</li>
 <li><i>inReplyTo</i>: The object(s) or link(s) that this is replying to.</li>
-<li><i>tag</i>: An association with another object (ex: hashtags)</li>
+<li><i>tag</i>: An association with another object (ex: hashtags).</li>
 </ul>
 <p>An
 <span class="code type">Object</span>
@@ -492,8 +492,8 @@ called "functional" properties.</p>
 all non-functional properties. Using <i>to</i> as
 an example, for a non-functional property you need to be able to:</p>
 <ul>
-<li>Be able to append a value on existing values of <i>to</i></li>
-<li>Be able to prepend a value on existing values of <i>to</i></li>
+<li>Append a value on existing values of <i>to</i></li>
+<li>Prepend a value on existing values of <i>to</i></li>
 <li>Tell how many values of <i>to</i> there are</li>
 <li>Determine what type of value <i>to</i> is at a specific index (the multiple
 values of <i>to</i> do not have to be the same type!)</li>
@@ -545,23 +545,23 @@ values of <i>to</i> do not have to be the same type!)</li>
 <span class="type">func</span> (o *<span class="type">Object</span>) SetSource(v ObjectType)
 <span class="type">func</span> (o *<span class="type">Object</span>) SetSourceIRI(v *url.URL)</pre>
 <aside class="best">Now is a good time to remind you that while your
-application can pick and a subset of properties to support, you must support
+application can pick a subset of properties to support, you must support
 as many types as allowed by the specification. Since this library matches the
-specification, using all methods available to you will guarantee maximum
+specification, using all methods for a property will guarantee maximum
 compatibility with the federation. Not doing so begins to
 limit what your peers can do when federating or writing client software with
-you, so please keep this in mind. Ignoring property types is similar to ignoring
+you. Ignoring property types is similar to ignoring
 errors returned by golang functions, and is strongly discouraged. I
 strongly recommend handling as many types on a property as possible.</aside>
 <p>Repeat this for numerous properties on many different types, and the API
-grows quite large. The large size is despite of the restrictions
-that ActivityStreams imposes on top of the very-flexible JSON-LD. If there is
+grows quite large. The size is large despite the restrictions
+ActivityStreams imposes on top of JSON-LD, which is very flexible. If there is
 one specification I would recommend keeping open while writing an ActivityStream
 application, it would be the
 <a href="https://www.w3.org/TR/activitystreams-vocabulary">ActivityStreams Vocabulary</a>.
 It will help you learn more ActivityStreams types, ActivityStreams
 properties, and the permitted value types of those properties.</p>
-<p>There's also interfaces provided in the
+<p>There are also interfaces provided in the
 <span class="code">vocab</span>
 package for each type. The
 <span class="code keyword">struct</span>
@@ -593,8 +593,8 @@ library provides such a function for you:</p>
 <span class="code type">CollectionType</span>,
 <span class="code type">OrderedCollectionType</span>, and
 <span class="code type">ActivityType</span>
-are highly likely to be removed in a future major version. The use of those
-other interfaces is discouraged.</aside>
+are highly likely to be removed in a major version release, so using them is 
+discouraged.</aside>
 <aside class="best">Use
 <span class="code type">ObjectType</span>,
 <span class="code type">LinkType</span>,
@@ -650,7 +650,7 @@ piece of content.
 Extends <span class="code type">Activity</span>.
 </li>
 <li><span class="code type">Delete</span>: An actor is removing an existing
-piece of content
+piece of content.
 Extends <span class="code type">Activity</span>.
 </li>
 <li><span class="code type">Follow</span>: An actor is requesting to follow
@@ -703,11 +703,11 @@ is acting upon (ex: The "wishlist" in "Alex added a note to their wishlist").</l
 and
 <span class="code type">Link</span>
 types both describe traditional pieces of application data. These are the things
-that actors apply activities on. Note that the
+that actors apply activities to. Note that the
 <span class="code type">Object</span>
 and
 <span class="code type">Link</span>
-types are specifically <i>disjoint</i> in the specification, which just means
+types are specifically made <i>disjoint</i> in the specification, which just means
 it is illegal to try to combine the two types together. Since there are very few
 interesting types that extend
 <span class="code type">Link</span>,
@@ -719,7 +719,7 @@ in Mastodon, the unit of microblogging.</li>
 <li><span class="code type">Image</span>: An image of any kind.</li>
 <li><span class="code type">Profile</span>: An object that is describing another
 object (typically an actor).</li>
-<li><span class="code type">Tombstone</span>: A placeholder types for content
+<li><span class="code type">Tombstone</span>: A placeholder type for content
 that was deleted. Allows preserving existing references without serving 404's.</li>
 <li><span class="code type">Video</span>: A video of any kind.</li>
 <li><span class="code type">Article</span>: A longer piece of text, typically
@@ -774,7 +774,7 @@ using
 <span class="code">pub</span>,
 there is one caveat to calling 
 <span class="code">Serialize</span>.
-This use case should be extremely rare because you're probably trying to one of
+This use case should be extremely rare because you're probably trying to do one of
 three things. One: you're trying to bypass
 <span class="code">pub</span>
 to do something borderline standard but technically allowed in ActivityPub.
@@ -810,7 +810,7 @@ m[<span class="literal">&quot;@context&quot;</span>] = <span class="literal">&qu
 <p>Again, this use case should be extremely rare in your application. The
 typical functionality in
 <span class="code">pub</span>
-should be sufficient for your typical needs.</p></aside>
+should be sufficient for your needs.</p></aside>
 <h3>Deserialization</h3>
 <p>If given a raw set of
 <span class="code">[]<span class="type">byte</span></span>,
@@ -903,10 +903,9 @@ at once when you may be expecting only one callback to be called.
 <h2 id="ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</h2>
 <p>While ActivityStreams defines the data structures being passed around, the
 ActivityPub protocol defines key behaviors to get very different applications
-to behave well together. While the SocialAPI and FederateAPI are different in
-such behaviors, there are a lot of common concepts. In this section, we will go
-over these common concepts that will be used regardless which API you ultimately
-will use for your application.</p>
+to behave well together. While the SocialAPI and FederateAPI define different
+behaviors, there are some shared concepts. We will go
+over these concepts in this section.</p>
 <p>Before we begin, understand that abstracting the ActivityPub protocol from
 an application is very difficult. However, 
 <span class="code">pub</span>
@@ -919,7 +918,7 @@ geared towards the latter.</p>
 or discover unexpected behavior, please file an
 <a href="https://github.com/go-fed/activity/issues/new/choose">issue</a>!
 </aside>
-<p>There are two big key things your application needs to accomplish, that this
+<p>There are two key things your application needs to accomplish, which this
 library will do for you:</p>
 <ul>
 <li>Handle an actor's inbox and outbox calls (for the SocialAPI, FederateAPI, or both)</li>
@@ -928,7 +927,7 @@ library will do for you:</p>
 <p>Before we can tackle these big items, we need to implement some interfaces
 so that the library can do these default behaviors for you.</p>
 <p>Firstly, the application needs to be able to fetch the current time. Rather
-than bake in calls to 
+than hardcode calls to 
 <span class="code">time.Now</span>, you will need to provide a simple clock type:</p>
 <pre><span class="keyword">type</span> <span class="type">Clock</span> <span class="keyword">interface</span> {
 	Now() time.<span class="type">Time</span>
@@ -1028,7 +1027,7 @@ callbacks is perfectly valid since the ActivityPub required behavior is handled
 for you by default.</p>
 <aside class="caution">Note that these callbacks are given
 <span class="code">stream</span>
-types. These types are at risk of being deprecated in a future major
+types. These types are at risk of being deprecated in a major version
 release, so upon receiving a
 <span class="code">stream</span>
 object, obtain the
@@ -1078,7 +1077,7 @@ var outboxHandler http.<span class="type">HandlerFunc</span> = <span class="type
 	} else if handled {
 	  return
 	}
-	<span class="comment">// Handle non-ActivityPub request, such as responding with an HTML</span>
+	<span class="comment">// Handle non-ActivityPub request, such as responding with a HTML</span>
 	<span class="comment">// representation with correct view permissions.</span>
 }
 var inboxHandler http.<span class="type">HandlerFunc</span> = func(w http.<span class="type">ResponseWriter</span>, r *http.<span class="type">Request</span>) {
@@ -1095,7 +1094,7 @@ var inboxHandler http.<span class="type">HandlerFunc</span> = func(w http.<span 
 	} else if handled {
 	  return
 	}
-	<span class="comment">// Handle non-ActivityPub request, such as responding with an HTML</span>
+	<span class="comment">// Handle non-ActivityPub request, such as responding with a HTML</span>
 	<span class="comment">// representation with correct view permissions.</span>
 }</pre>
 <p>That handles one of the two big behaviors! The other behavior is to handle
@@ -1103,7 +1102,7 @@ serving the raw
 ActivityStream data at the URL endpoint that matches its <i>id</i> property.
 There are two ways to do this: one function provides default HTTP Signature
 checking, and the other lets you use your own custom
-authentication/authorization method:</p>
+authentication/authorization method.</p>
 <pre><span class="comment">// Given:</span>
 <span class="comment">//     var myApp pub.Application</span>
 <span class="comment">//     var myClock pub.Clock</span>
@@ -1125,7 +1124,7 @@ var serveIRIHandler http.<span class="type">HandlerFunc</span> = <span class="ty
 	} else if handled {
 	  return
 	}
-	<span class="comment">// Handle non-ActivityPub request, such as responding with an HTML</span>
+	<span class="comment">// Handle non-ActivityPub request, such as responding with a HTML</span>
 	<span class="comment">// representation with correct view permissions.</span>
 }</pre>
 <p>And that's about all it takes to hook ActivityPub behaviors into your new or
@@ -1139,24 +1138,27 @@ type.</p>
 <p>The SocialAPI provides the following default behaviors for the following
 activities (heavily summarized):</p>
 <ul>
-<li><span class="code type">Create</span>: Creating a new <i>id</i> and setting the new object in the <span class="code type">Application</span></li>
-<li><span class="code type">Update</span>: Partially updating an existing object</li>
-<li><span class="code type">Delete</span>: Setting an existing object as a <span class="code type">Tombstone</span></li>
-<li><span class="code type">Add</span>: Adds an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it</li>
-<li><span class="code type">Remove</span>: Removes an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it</li>
-<li><span class="code type">Like</span>: Adds a like to the appropriate <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span></li>
+<li><span class="code type">Create</span>: Creating a new <i>id</i> and setting the new object in the <span class="code type">Application</span>.</li>
+<li><span class="code type">Update</span>: Partially updating an existing object.</li>
+<li><span class="code type">Delete</span>: Setting an existing object as a <span class="code type">Tombstone</span>.</li>
+<li><span class="code type">Add</span>: Adds an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it.</li>
+<li><span class="code type">Remove</span>: Removes an object from a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it.</li>
+<li><span class="code type">Like</span>: Adds a like to the appropriate <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>.</li>
 </ul>
 <aside class="best">Customize these behaviors by implementing a
 <span class="code type">Callbacker</span>! Call your local salesperson today!</aside>
 <p>Now, to obtain a
 <span class="code type">Pubber</span>
 you will need to call:</p>
-<pre><span class="type">func</span> NewSocialPubber(clock <span class="type">Clock</span>, app <span class="type">SocialApplication</span>, cb <span class="type">Callbacker</span>) <span class="type">Pubber</span></pre>
+<pre><span class="type">func</span> NewSocialPubber(
+	clock <span class="type">Clock</span>,
+	app <span class="type">SocialApplication</span>,
+	cb <span class="type">Callbacker</span>) <span class="type">Pubber</span></pre>
 <p>You should have the
 <span class="code type">Clock</span>
 and
 <span class="code type">Callbacker</span>
-from the previous section:
+from the previous section
 <a href="#ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</a>.
 However, the
 <span class="code type">SocialApplication</span>
@@ -1169,11 +1171,11 @@ is defined as:</p>
 <span class="code type">Application</span>
 you just have to implement the methods in
 <span class="code type">SocialAPI</span>,
-which provides the following necessary behaviors for this library:</p>
+which provide the following necessary behaviors for this library:</p>
 <ul>
 <li>Determine the actor's id for a given HTTP request, typically by examining the request URL path.</li>
-<li>Optionally use a custom authentication/authorization method besides HTTP Signatures (the default)</li>
-<li>Obtain a public key for an actor's outbox to ensure the user is authentic when verifying with HTTP Signatures (the default)</li>
+<li>Optionally use a custom authentication/authorization method besides HTTP Signatures (the default).</li>
+<li>Obtain a public key for an actor's outbox to ensure the user is authentic when verifying with HTTP Signatures (the default).</li>
 </ul>
 <p>This is how it looks as an interface (comments differ from the source):</p>
 <pre><span class="keyword">type</span> <span class="type">SocialAPI</span> <span class="keyword">interface</span> {
@@ -1185,10 +1187,10 @@ which provides the following necessary behaviors for this library:</p>
 	GetPublicKeyForOutbox(c context.<span class="type">Context</span>, publicKeyId <span class="type">string</span>, boxIRI *url.<span class="type">URL</span>) (crypto.<span class="type">PublicKey</span>, httpsig.<span class="type">Algorithm</span>, <span class="type">error</span>)
 }</pre>
 <p>This introduces us to our final interface:
-<span class="code type">SocialAPIVerifier</span>,
+<span class="code type">SocialAPIVerifier</span>.
 It is only necessary if you want to implement OAuth 2.0 or some other
 authentication/authorization scheme besides the default HTTP Signatures.
-It's interface is simple but nuanced:</p>
+Its interface is simple but nuanced:</p>
 <pre><span class="keyword">type</span> <span class="type">SocialAPIVerifier</span> <span class="keyword">interface</span> {
 	Verify(r *http.<span class="type">Request</span>) (authenticatedUser *url.<span class="type">URL</span>, authn, authz <span class="type">bool</span>, err <span class="type">error</span>)
 	VerifyForOutbox(r *http.<span class="type">Request</span>, outbox *url.<span class="type">URL</span>) (authn, authz <span class="type">bool</span>, err <span class="type">error</span>)
@@ -1202,14 +1204,14 @@ section, you are good to build an application using ActivityPub's SocialAPI prot
 <p>The FederateAPI provides the following default behaviors for the following
 activities (heavily summarized):</p>
 <ul>
-<li><span class="code type">Create</span>: Sets a new object on the <span class="code type">Application</span></li>
-<li><span class="code type">Update</span>: Replaces an existing object in the <span class="code type">Application</span></li>
-<li><span class="code type">Delete</span>: Turns an existing object into a <span class="code type">Tombstone</span></li>
-<li><span class="code type">Follow</span>: Adds to a followers <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span> if auto-approve or auto-reject is enabled.</li>
-<li><span class="code type">Accept</span>:Adds to a following <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span> if a <span class="code type">Follow</span> was accepted.</li>
-<li><span class="code type">Add</span>: Adds an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it</li>
-<li><span class="code type">Remove</span>: Removes an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it</li>
-<li><span class="code type">Like</span>: Adds a like to the appropriate <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span></li>
+<li><span class="code type">Create</span>: Sets a new object in the <span class="code type">Application</span>.</li>
+<li><span class="code type">Update</span>: Replaces an existing object in the <span class="code type">Application</span>.</li>
+<li><span class="code type">Delete</span>: Turns an existing object into a <span class="code type">Tombstone</span>.</li>
+<li><span class="code type">Follow</span>: Adds to a <i>followers</i> <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span> if auto-approve or auto-reject is enabled.</li>
+<li><span class="code type">Accept</span>:Adds to a <i>following</i> <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span> if a <span class="code type">Follow</span> was accepted.</li>
+<li><span class="code type">Add</span>: Adds an object to a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it.</li>
+<li><span class="code type">Remove</span>: Removes an object from a target <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>, if <span class="code type">Application</span> permits it.</li>
+<li><span class="code type">Like</span>: Adds a like to the appropriate <span class="code type">Collection</span> or <span class="code type">OrderedCollection</span>.</li>
 </ul>
 <aside class="best">Customize these behaviors by implementing a
 <span class="code type">Callbacker</span>! Call your local salesperson today!</aside>
@@ -1225,12 +1227,19 @@ message to Addison's followers.</p>
 <p>To obtain a
 <span class="code type">Pubber</span>
 you will need to call:</p>
-<pre><span class="type">func</span> NewFederatingPubber(clock <span class="type">Clock</span>, app <span class="type">FederateApplication</span>, cb <span class="type">Callbacker</span>, d <span class="type">Deliverer</span>, client <span class="type">HttpClient</span>, userAgent <span class="type">string</span>, maxDeliveryDepth, maxForwardingDepth <span class="type">int</span>) <span class="type">Pubber</span></pre>
+<pre><span class="type">func</span> NewFederatingPubber(
+	clock <span class="type">Clock</span>,
+	app <span class="type">FederateApplication</span>,
+	cb <span class="type">Callbacker</span>,
+	d <span class="type">Deliverer</span>,
+	client <span class="type">HttpClient</span>,
+	userAgent <span class="type">string</span>,
+	maxDeliveryDepth, maxForwardingDepth <span class="type">int</span>) <span class="type">Pubber</span></pre>
 <p>You should have the
 <span class="code type">Clock</span>
 and
 <span class="code type">Callbacker</span>
-from the previous section:
+from the previous section
 <a href="#ActivityPub-The-Two-Protocols">ActivityPub: The Two Protocols</a>.
 It also requires a
 <span class="code type">FederateApplication</span>,
@@ -1250,13 +1259,13 @@ is defined as:</p>
 <span class="code type">Application</span>
 you just have to implement the methods in
 <span class="code type">FederateAPI</span>,
-which provides the following necessary behaviors for this library:</p>
+which provide the following necessary behaviors for this library:</p>
 <ul>
-<li>How to handle follow requests (auto-approve, auto-reject, manually decide)</li>
-<li>Whether an interaction should be blocked</li>
-<li>Filter recipients when forwarding messages in order to avoid "ghost replies"</li>
-<li>Sign federated messages with HTTP Signatures</li>
-<li>Obtain private and public keys for proper signing</li>
+<li>How to handle follow requests (auto-approve, auto-reject, manually decide).</li>
+<li>Whether an interaction should be blocked.</li>
+<li>Filter recipients when forwarding messages in order to avoid "ghost replies".</li>
+<li>Sign federated messages with HTTP Signatures.</li>
+<li>Obtain private and public keys for proper signing.</li>
 </ul>
 <p>This is how it looks as an interface (comments differ from the source):</p>
 <pre><span class="keyword">type</span> <span class="type">FederateAPI</span> <span class="keyword">interface</span> {
@@ -1308,8 +1317,8 @@ implements this interface:</p>
 are settings used to govern details in the behavior of your application:</p>
 <ul>
 <li><span class="code">userAgent</span>: Your application-specific string to be included in the user agent. The go-fed library includes itself as well.</li>
-<li><span class="code">maxDeliveryDepth</span>: The maximum recursive iterations when resolving inboxes (must be &gt;= 1)</li>
-<li><span class="code">maxForwardingDepth</span>: The maximum recursive iterations when looking to forward messages to avoid the "ghost reply" problem (must be &gt;= 1)</li>
+<li><span class="code">maxDeliveryDepth</span>: The maximum recursive iterations when resolving inboxes (must be &gt;= 1).</li>
+<li><span class="code">maxForwardingDepth</span>: The maximum recursive iterations when looking to forward messages to avoid the "ghost reply" problem (must be &gt;= 1).</li>
 </ul>
 <p>And with that, you have your
 <span class="code">Pubber</span>
@@ -1324,7 +1333,14 @@ in this case is both of the
 <span class="code">NewSocialPubber</span> and
 <span class="code">NewFederatingPubber</span>
 functions squished into one. <i>Squish</i> is a highly technical term:</p>
-<pre>NewPubber(clock <span class="type">Clock</span>, app <span class="type">SocialFederateApplication</span>, client, server <span class="type">Callbacker</span>, d <span class="type">Deliverer</span>, httpClient <span class="type">HttpClient</span>, userAgent <span class="type">string</span>, maxDeliveryDepth, maxForwardingDepth <span class="type">int</span>) <span class="type">Pubber</span></pre>
+<pre><span class="type">func</span> NewPubber(
+	clock <span class="type">Clock</span>,
+	app <span class="type">SocialFederateApplication</span>,
+	client, server <span class="type">Callbacker</span>,
+	d <span class="type">Deliverer</span>,
+	httpClient <span class="type">HttpClient</span>,
+	userAgent <span class="type">string</span>,
+	maxDeliveryDepth, maxForwardingDepth <span class="type">int</span>) <span class="type">Pubber</span></pre>
 <p>The
 <span class="code type">SocialFederateApplication</span>
 type is simply:</p>
@@ -1342,7 +1358,7 @@ parameters and their types:</p>
 <aside class="caution">There are <b>two</b> <span class="code type">Callbacker</span>
 objects required when using both APIs. This lets you distinguish between an
 Activity being received by a user via the SocialAPI (<span class="code">client</span>)
-one being received from a peer via the FederateAPI (<span class="code">server</span>),
+and one being received from a peer via the FederateAPI (<span class="code">server</span>),
 as you will want to treat these use cases differently.</aside>
 <h2 id="References">References</h2>
 <p>These are the references I used or referred to when building all libraries within
