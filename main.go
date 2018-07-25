@@ -82,7 +82,7 @@ func main() {
 		TemplateFiles: []string{"tmpl.tmpl"},
 		Repositories:  []server.RepositoryOptions{rOpt},
 		HttpServer:    httpsServer,
-		RefreshRate:   time.Minute * 5,
+		RefreshRate:   time.Hour * 24,
 		Favicon:       fav,
 		SiteTitle:     "Go-Fed",
 		OrgDataPath:   "https://github.com/go-fed",
