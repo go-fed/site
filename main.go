@@ -92,15 +92,32 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	redir := &http.Server{
+		Addr:         ":http",
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("Connection", "close")
+			http.Redirect(w, req, fmt.Sprintf("https://%s%s", req.Host, req.URL), http.StatusMovedPermanently)
+		}),
+	}
 	ch := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
+		if err := redir.Shutdown(context.Background()); err != nil {
+			log.Printf("HTTP redirect server Shutdown: %v", err)
+		}
 		if err := httpsServer.Shutdown(context.Background()); err != nil {
 			log.Printf("HTTP server Shutdown: %v", err)
 		}
 		close(ch)
+	}()
+	go func() {
+		if err := redir.ListenAndServe(); err != http.ErrServerClosed {
+			log.Printf("HTTP redirect server ListenAndServe: %v", err)
+		}
 	}()
 	c := NewCommandLineFlags()
 	if err := srv.ListenAndServeTLS(*c.CertFile, *c.KeyFile, ch); err != nil {
