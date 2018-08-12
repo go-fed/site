@@ -61,6 +61,7 @@ type repository struct {
 	timeout        time.Duration
 	errors         chan error
 	taggedPackages chan TaggedRepositoryPackages
+	beginSync      chan struct{}
 	// Internal mutable state
 	isOnDisk bool
 	mu       *sync.Mutex
@@ -76,6 +77,7 @@ func newRepository(cloneURL *url.URL, dest string, timeout time.Duration) *repos
 		timeout:        timeout,
 		errors:         make(chan error),
 		taggedPackages: make(chan TaggedRepositoryPackages),
+		beginSync:      make(chan struct{}),
 		mu:             &sync.Mutex{},
 	}
 }
@@ -86,6 +88,10 @@ func (r *repository) Errors() <-chan error {
 
 func (r *repository) Packages() <-chan TaggedRepositoryPackages {
 	return r.taggedPackages
+}
+
+func (r *repository) BeginSync() <-chan struct{} {
+	return r.beginSync
 }
 
 func (r *repository) Sync() {
@@ -109,6 +115,7 @@ func (r *repository) Sync() {
 		r.errors <- err
 		return
 	}
+	r.beginSync <- struct{}{}
 	tags = append(tags, masterBranch)
 	results := make(TaggedRepositoryPackages, 0)
 	for _, tag := range tags {

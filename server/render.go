@@ -19,6 +19,7 @@ const (
 	repositoriesTemplate = "repositories"
 	tagTemplate          = "tag"
 	packageTemplate      = "package"
+	refreshingTemplate   = "refresh"
 )
 
 type data struct {
@@ -160,4 +161,8 @@ func (r *renderer) Tag(w io.Writer, data *tagData) error {
 
 func (r *renderer) Package(w io.Writer, data *packageData) error {
 	return r.execute(w, packageTemplate, data)
+}
+
+func (r *renderer) Refreshing(w io.Writer, data *homeData) error {
+	return r.execute(w, refreshingTemplate, data)
 }

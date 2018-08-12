@@ -267,6 +267,7 @@ aside.advanced {
 {{/* NOT FOUND TEMPLATE */}}
 {{define "notFound"}}{{template "header" .}}<header><h1>Not Found</h1></header>
 <p>Sorry, nothing was found here!</p>
+<p>Perhaps the documentation is stuck being regenerated?</p>
 {{template "footer" .}}{{end}}
 
 {{/* HOME TEMPLATE */}}
@@ -1399,6 +1400,12 @@ the go-fed organization, including but not limited to the
 	<li><a href="{{.Path}}">{{.Name}}</a></li>
 {{end}}
 </ul>
+{{template "footer" .C}}{{end}}
+
+{{/* REFRESHING TEMPLATE */}}
+{{define "refresh"}}{{template "header" .C}}<header><h1>Repositories</h1></header>
+<p>Please select a repository:</p>
+<p><b>The documentation is currently being regenerated...</b></p>
 {{template "footer" .C}}{{end}}
 
 {{/* REPO TEMPLATE */}}

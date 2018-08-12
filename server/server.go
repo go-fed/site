@@ -237,55 +237,63 @@ func (s *Server) createServeMux(projectPkgs ProjectPackages) {
 			log.Println(err)
 		}
 	})
-	s.mux.HandleFunc(repositoryPath, func(w http.ResponseWriter, req *http.Request) {
-		if err := s.renderer.AllRepositories(w, d.RepositoriesData); err != nil {
-			log.Println(err)
-		}
-	})
-	for _, repoPkgs := range projectPkgs {
-		myRepoPath := fmt.Sprintf("%s/%s", repositoryPath, repoPkgs.Project)
-		rData := &repositoryData{
-			Name: repoPkgs.Project,
-			Path: myRepoPath,
-			C:    cd,
-		}
-		d.RepositoryData = append(d.RepositoryData, rData)
-		s.mux.HandleFunc(myRepoPath, func(w http.ResponseWriter, req *http.Request) {
-			if err := s.renderer.Repository(w, rData); err != nil {
+	if projectPkgs == nil {
+		s.mux.HandleFunc(repositoryPath, func(w http.ResponseWriter, req *http.Request) {
+			if err := s.renderer.Refreshing(w, d.HomeData); err != nil {
 				log.Println(err)
 			}
 		})
-		for _, pkgs := range repoPkgs.TaggedRepositoryPackages {
-			myTagPath := fmt.Sprintf("%s/%s%s/%s", repositoryPath, repoPkgs.Project, tagPath, pkgs.Tag)
-			tData := &tagData{
-				Name:   pkgs.Tag,
-				Path:   myTagPath,
-				C:      cd,
-				Parent: rData,
+	} else {
+		s.mux.HandleFunc(repositoryPath, func(w http.ResponseWriter, req *http.Request) {
+			if err := s.renderer.AllRepositories(w, d.RepositoriesData); err != nil {
+				log.Println(err)
 			}
-			rData.TagData = append(rData.TagData, tData)
-			s.mux.HandleFunc(myTagPath, func(w http.ResponseWriter, req *http.Request) {
-				if err := s.renderer.Tag(w, tData); err != nil {
+		})
+		for _, repoPkgs := range projectPkgs {
+			myRepoPath := fmt.Sprintf("%s/%s", repositoryPath, repoPkgs.Project)
+			rData := &repositoryData{
+				Name: repoPkgs.Project,
+				Path: myRepoPath,
+				C:    cd,
+			}
+			d.RepositoryData = append(d.RepositoryData, rData)
+			s.mux.HandleFunc(myRepoPath, func(w http.ResponseWriter, req *http.Request) {
+				if err := s.renderer.Repository(w, rData); err != nil {
 					log.Println(err)
 				}
 			})
-			for _, pkg := range pkgs.RepositoryPackages {
-				p := fmt.Sprintf("%s/%s%s/%s%s/%s", repositoryPath, repoPkgs.Project, tagPath, pkgs.Tag, packagePath, pkg.ImportPath)
-				parts := strings.Split(pkg.ImportPath, "/")
-				pData := &packageData{
-					Name:    parts[len(parts)-1],
-					Path:    p,
-					Package: pkg.P,
-					FSet:    pkg.F,
-					C:       cd,
-					Parent:  tData,
+			for _, pkgs := range repoPkgs.TaggedRepositoryPackages {
+				myTagPath := fmt.Sprintf("%s/%s%s/%s", repositoryPath, repoPkgs.Project, tagPath, pkgs.Tag)
+				tData := &tagData{
+					Name:   pkgs.Tag,
+					Path:   myTagPath,
+					C:      cd,
+					Parent: rData,
 				}
-				tData.PackageData = append(tData.PackageData, pData)
-				s.mux.HandleFunc(p, func(w http.ResponseWriter, req *http.Request) {
-					if err := s.renderer.Package(w, pData); err != nil {
+				rData.TagData = append(rData.TagData, tData)
+				s.mux.HandleFunc(myTagPath, func(w http.ResponseWriter, req *http.Request) {
+					if err := s.renderer.Tag(w, tData); err != nil {
 						log.Println(err)
 					}
 				})
+				for _, pkg := range pkgs.RepositoryPackages {
+					p := fmt.Sprintf("%s/%s%s/%s%s/%s", repositoryPath, repoPkgs.Project, tagPath, pkgs.Tag, packagePath, pkg.ImportPath)
+					parts := strings.Split(pkg.ImportPath, "/")
+					pData := &packageData{
+						Name:    parts[len(parts)-1],
+						Path:    p,
+						Package: pkg.P,
+						FSet:    pkg.F,
+						C:       cd,
+						Parent:  tData,
+					}
+					tData.PackageData = append(tData.PackageData, pData)
+					s.mux.HandleFunc(p, func(w http.ResponseWriter, req *http.Request) {
+						if err := s.renderer.Package(w, pData); err != nil {
+							log.Println(err)
+						}
+					})
+				}
 			}
 		}
 	}
@@ -297,10 +305,11 @@ func (s *Server) ListenAndServeTLS(certFile, keyFile string, shutdownDone <-chan
 	wg := &sync.WaitGroup{}
 	errMux := make(chan error)
 	pkgMux := make(chan projectRepositoryPackages)
+	clearMux := make(chan string)
 	s.watchErrors(errMux, ctx, wg)
-	s.watchPackages(pkgMux, ctx, wg)
+	s.watchPackages(pkgMux, clearMux, ctx, wg)
 	s.consumeErrors(errMux, ctx, wg)
-	s.consumePackages(pkgMux, ctx, wg)
+	s.consumePackages(pkgMux, clearMux, ctx, wg)
 	s.syncLauncher(ctx, wg)
 	err := s.server.ListenAndServeTLS(certFile, keyFile)
 	cancelFunc()
@@ -352,14 +361,17 @@ type projectRepositoryPackages struct {
 	Packages    TaggedRepositoryPackages
 }
 
-func (s *Server) watchPackages(mux chan<- projectRepositoryPackages, c context.Context, wg *sync.WaitGroup) {
+func (s *Server) watchPackages(mux chan<- projectRepositoryPackages, clear chan<- string, c context.Context, wg *sync.WaitGroup) {
 	for name, repo := range s.repo {
 		wg.Add(1)
 		go func(projectName string, r *repository) {
 			defer wg.Done()
+			begin := r.BeginSync()
 			ch := r.Packages()
 			for {
 				select {
+				case <-begin:
+					clear <- projectName
 				case p := <-ch:
 					mux <- projectRepositoryPackages{
 						ProjectName: projectName,
@@ -402,13 +414,15 @@ func (s *Server) consumeErrors(mux <-chan error, c context.Context, wg *sync.Wai
 	}()
 }
 
-func (s *Server) consumePackages(mux <-chan projectRepositoryPackages, c context.Context, wg *sync.WaitGroup) {
+func (s *Server) consumePackages(mux <-chan projectRepositoryPackages, clear <-chan string, c context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		m := make(ProjectPackages, 0, len(s.repo))
 		for {
 			select {
+			case <-clear:
+				s.createServeMux(nil)
 			case prp := <-mux:
 				m = append(m, ProjectPackage{
 					TaggedRepositoryPackages: prp.Packages,
