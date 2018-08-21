@@ -545,7 +545,7 @@ values of <i>to</i> do not have to be the same type!)</li>
 <span class="comment">// Set different types of 'source' values</span>
 <span class="type">func</span> (o *<span class="type">Object</span>) SetSource(v ObjectType)
 <span class="type">func</span> (o *<span class="type">Object</span>) SetSourceIRI(v *url.URL)</pre>
-<aside class="best">Now is a good time to remind you that while your
+<aside class="best"><p>Now is a good time to remind you that while your
 application can pick a subset of properties to support, you must support
 as many types as allowed by the specification. Since this library matches the
 specification, using all methods for a property will guarantee maximum
@@ -553,7 +553,37 @@ compatibility with the federation. Not doing so begins to
 limit what your peers can do when federating or writing client software with
 you. Ignoring property types is similar to ignoring
 errors returned by golang functions, and is strongly discouraged. I
-strongly recommend handling as many types on a property as possible.</aside>
+strongly recommend handling as many types on a property as possible.</p></aside>
+<aside class="advanced"><p>You may also decide your application is required to
+handle additional types for existing properties that are not being deserialized
+by the
+<span class="code">vocab</span>
+or
+<span class="code">streams</span>
+libraries, or you may decide to support additional properties not listed in the
+specification. In both cases the
+<span class="code">vocab</span>
+package provides the <i>unknown</i> set of APIs for each type and for each property:
+<pre><span class="comment">// Unknown types for an existing property like 'replies'</span>
+<span class="keyword">var</span> i <span class="keyword">interface</span>{}
+obj.SetUnknownReplies(i)
+<span class="keyword">if</span> obj.HasUnknownReplies(i) {
+	<span class="comment">// Call obj.GetUnknownReplies(),
+	// which returns an </span><span class="keyword">interface</span><span class="comment">{}</span>
+}
+<span class="comment">// Unknown properties on a type, where 'key' is its name</span>
+<span class="keyword">var</span> key <span class="type">string</span>
+obj.AddUnknown(key, i)
+<span class="keyword">if</span> obj.HasUnknown(key) {
+	<span class="comment">// Call obj.GetUnknown(key),
+	// which returns an </span><span class="keyword">interface</span><span class="comment">{}</span>
+}
+obj.RemoveUnknown(key, i)
+</pre>
+Additional and better vocabulary support is targeted for the version
+<span class="code">1.x</span>
+release.
+</p></aside>
 <p>Repeat this for numerous properties on many different types, and the API
 grows quite large. The size is large despite the restrictions
 ActivityStreams imposes on top of JSON-LD, which is very flexible. If there is
@@ -684,6 +714,10 @@ Extends <span class="code type">Activity</span>.
 <li><span class="code type">Undo</span>: An actor is undo-ing a previous
 action (ex: to undo a like as opposed to mistakenly disliking something already
 liked).
+Extends <span class="code type">Activity</span>.
+</li>
+<li><span class="code type">Announce</span>: An actor is sharing another
+piece of content, from themselves or another user (ex: Mastodon's boost).
 Extends <span class="code type">Activity</span>.
 </li>
 </ul>
@@ -1035,6 +1069,34 @@ object, obtain the
 <span class="code">vocab</span>
 version by simply calling:
 <span class="code">v := s.Raw()</span></aside>
+<aside class="best"><p>Starting in version
+<span class="code">0.3.0</span>, you may define additional methods on your
+<span class="code type">Callbacker</span>
+implementation to handle additional activities not required by the
+<span class="code type">Callbacker</span>
+interface. The methods must be of the form:
+<pre>X(c context.<span class="type">Context</span>, s *streams.<span class="type">X</span>) <span class="type">error</span></pre>
+where <span class="code">X</span> is one of the following types:
+<ul>
+<li><span class="code type">Announce</span></li>
+<li><span class="code type">Arrive</span></li>
+<li><span class="code type">Dislike</span></li>
+<li><span class="code type">Flag</span></li>
+<li><span class="code type">Ignore</span></li>
+<li><span class="code type">Invite</span></li>
+<li><span class="code type">Join</span></li>
+<li><span class="code type">Leave</span></li>
+<li><span class="code type">Listen</span></li>
+<li><span class="code type">Move</span></li>
+<li><span class="code type">Offer</span></li>
+<li><span class="code type">Question</span></li>
+<li><span class="code type">Read</span></li>
+<li><span class="code type">TentativeAccept</span></li>
+<li><span class="code type">TentativeReject</span></li>
+<li><span class="code type">Travel</span></li>
+<li><span class="code type">View</span></li>
+</ul>
+</p></aside>
 <p>Now that these interfaces are implemented, you can create a
 <span class="code type">Pubber</span>
 type. What does this do for you? Why use a funky naming thing? Why am I talking
@@ -1216,6 +1278,17 @@ activities (heavily summarized):</p>
 </ul>
 <aside class="best">Customize these behaviors by implementing a
 <span class="code type">Callbacker</span>! Call your local salesperson today!</aside>
+<aside class="best"><p>Starting in version
+<span class="code">0.3.0</span>, the
+<span class="code type">Announce</span>
+activity's default behavior is also supported in the Federate API. It adds the 
+<span class="code type">Announce</span>
+to the <i>shares</i>
+<span class="code type">Collection</span>
+or
+<span class="code type">OrderedCollection</span>
+on the object being announced, if owned by your application.
+</p></aside>
 <p>This will let you federate with peer servers, but without the SocialAPI
 your application will presumably need some other mechanism for users to create
 content. Once created, this library will take care of federating with peers.</p>
