@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -63,8 +64,7 @@ type repository struct {
 	taggedPackages chan TaggedRepositoryPackages
 	beginSync      chan struct{}
 	// Internal mutable state
-	isOnDisk bool
-	mu       *sync.Mutex
+	mu *sync.Mutex
 }
 
 func newRepository(cloneURL *url.URL, dest string, timeout time.Duration) *repository {
@@ -97,19 +97,16 @@ func (r *repository) BeginSync() <-chan struct{} {
 func (r *repository) Sync() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if err := r.setIsOnDisk(); err != nil {
-		r.errors <- err
-		return
-	}
-	if !r.isOnDisk {
-		if err := r.clone(); err != nil {
+	if _, err := os.Stat(r.dest); os.IsNotExist(err) {
+		if err := r.createDestFolder(); err != nil {
 			r.errors <- err
 			return
 		}
-	} else if err := r.pull(); err != nil {
+	} else if err != nil {
 		r.errors <- err
 		return
 	}
+
 	tags, err := r.getTags()
 	if err != nil {
 		r.errors <- err
@@ -123,7 +120,7 @@ func (r *repository) Sync() {
 			r.errors <- err
 			continue
 		}
-		tagResult, err := r.getRepositoryPackages()
+		tagResult, err := r.getRepositoryPackages(tag)
 		if err != nil {
 			r.errors <- err
 			continue
@@ -138,50 +135,29 @@ func (r *repository) Sync() {
 	}
 }
 
-func (r *repository) setIsOnDisk() error {
-	r.isOnDisk = false
-	if _, err := os.Stat(r.dest + gitDir); os.IsNotExist(err) {
-		if err := r.createDestFolder(); err != nil {
-			return err
-		}
-		return nil
-	} else if err != nil {
-		return err
-	}
-	r.isOnDisk = true
-	return nil
-}
-
-func (r *repository) clone() error {
-	_, _, err := r.exec("git", "clone", r.cloneURL.String(), ".")
-	return err
-}
-
-func (r *repository) pull() error {
-	if err := r.checkoutMaster(); err != nil {
-		return err
-	}
-	_, _, err := r.exec("git", "pull")
-	return err
-}
-
 func (r *repository) getTags() ([]string, error) {
-	stdout, _, err := r.exec("git", "tag")
+	if err := r.removeRelativeDirectory("repo4tags"); err != nil {
+		return nil, err
+	}
+	_, _, err := r.exec("git", "clone", "--bare", r.cloneURL.String(), "repo4tags")
+	if err != nil {
+		return nil, err
+	}
+	stdout, _, err := r.execInSubdir("repo4tags", "git", "tag")
 	s := strings.TrimSpace(string(stdout))
 	return strings.Split(s, "\n"), err
 }
 
-func (r *repository) checkoutMaster() error {
-	return r.checkout(masterBranch)
-}
-
 func (r *repository) checkout(tag string) error {
-	_, _, err := r.exec("git", "checkout", tag, "-f")
+	if err := r.removeRelativeDirectory(tag); err != nil {
+		return err
+	}
+	_, _, err := r.exec("git", "clone", "--branch", tag, "--depth", "1", r.cloneURL.String(), tag)
 	return err
 }
 
-func (r *repository) getRepositoryPackages() (RepositoryPackages, error) {
-	dirs, err := r.getDestDirs(r.dest)
+func (r *repository) getRepositoryPackages(subdir string) (RepositoryPackages, error) {
+	dirs, err := r.getSubdirsRecursively(filepath.Join(r.dest, subdir) + string(rune(os.PathSeparator)))
 	if err != nil {
 		return nil, err
 	}
@@ -214,6 +190,10 @@ func (r *repository) getRepositoryPackages() (RepositoryPackages, error) {
 	return pkgs, nil
 }
 
+func (r *repository) removeRelativeDirectory(relativePath string) error {
+	return os.RemoveAll(filepath.Join(r.dest, relativePath))
+}
+
 func (r *repository) createDestFolder() error {
 	if err := os.MkdirAll(r.dest, 0777); os.IsExist(err) {
 		return nil
@@ -224,10 +204,14 @@ func (r *repository) createDestFolder() error {
 }
 
 func (r *repository) exec(cmdLine string, args ...string) ([]byte, []byte, error) {
+	return r.execInSubdir("", cmdLine, args...)
+}
+
+func (r *repository) execInSubdir(subdir, cmdLine string, args ...string) ([]byte, []byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, cmdLine, args...)
-	cmd.Dir = r.dest
+	cmd.Dir = filepath.Join(r.dest, subdir)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		r.errors <- err
@@ -251,7 +235,7 @@ func (r *repository) exec(cmdLine string, args ...string) ([]byte, []byte, error
 	return stdoutBytes, stderrBytes, err
 }
 
-func (r *repository) getDestDirs(baseDir string) ([]string, error) {
+func (r *repository) getSubdirsRecursively(baseDir string) ([]string, error) {
 	files, err := ioutil.ReadDir(baseDir)
 	if err != nil {
 		return nil, err
@@ -266,7 +250,7 @@ func (r *repository) getDestDirs(baseDir string) ([]string, error) {
 		}
 		subdir := baseDir + f.Name() + string(rune(os.PathSeparator))
 		dirs = append(dirs, subdir)
-		subdirs, err := r.getDestDirs(subdir)
+		subdirs, err := r.getSubdirsRecursively(subdir)
 		if err != nil {
 			return nil, err
 		}

@@ -312,9 +312,13 @@ func (s *Server) ListenAndServeTLS(certFile, keyFile string, shutdownDone <-chan
 	s.consumePackages(pkgMux, clearMux, ctx, wg)
 	s.syncLauncher(ctx, wg)
 	err := s.server.ListenAndServeTLS(certFile, keyFile)
+	log.Println("Server ListenAndServeTLS Done")
 	cancelFunc()
+	log.Println("Cancelled context")
 	wg.Wait()
+	log.Println("Server WaitGroups done")
 	<-shutdownDone
+	log.Println("Received shutdownDone")
 	if err == http.ErrServerClosed {
 		err = nil
 	}
