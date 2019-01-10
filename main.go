@@ -15,14 +15,16 @@ import (
 )
 
 type CommandLineFlags struct {
-	CertFile *string
-	KeyFile  *string
+	CertFile       *string
+	KeyFile        *string
+	SkipGeneration bool
 }
 
 func NewCommandLineFlags() *CommandLineFlags {
 	c := &CommandLineFlags{
-		CertFile: flag.String("cert", "tls.crt", "Path to certificate public file"),
-		KeyFile:  flag.String("key", "tls.key", "Path to certificate private key file"),
+		CertFile:       flag.String("cert", "tls.crt", "Path to certificate public file"),
+		KeyFile:        flag.String("key", "tls.key", "Path to certificate private key file"),
+		SkipGeneration: flag.Bool("skip", false, "Skip generating the godoc"),
 	}
 	flag.Parse()
 	if err := c.validate(); err != nil {
@@ -42,6 +44,7 @@ func (c *CommandLineFlags) validate() error {
 }
 
 func main() {
+	c := NewCommandLineFlags()
 	activityURL, err := url.Parse("https://github.com/go-fed/activity.git")
 	if err != nil {
 		panic(err)
@@ -65,11 +68,14 @@ func main() {
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 	}
 
-	rOpt := server.RepositoryOptions{
-		ProjectName:         "activity",
-		HttpsCloneURL:       activityURL,
-		DiskCacheFilePath:   "./tmp/activity",
-		GitOperationTimeout: time.Minute,
+	var rOpt []server.RepositoryOptions
+	if !c.SkipGeneration {
+		rOpt = server.RepositoryOptions{
+			ProjectName:         "activity",
+			HttpsCloneURL:       activityURL,
+			DiskCacheFilePath:   "./tmp/activity",
+			GitOperationTimeout: time.Minute,
+		}
 	}
 	fav := server.FaviconOptions{
 		Png16Path:  "./gofed-16.png",
@@ -80,7 +86,7 @@ func main() {
 	}
 	opts := server.ServerOptions{
 		TemplateFiles: []string{"tmpl.tmpl"},
-		Repositories:  []server.RepositoryOptions{rOpt},
+		Repositories:  rOpt,
 		HttpServer:    httpsServer,
 		RefreshRate:   time.Hour * 24,
 		Favicon:       fav,
@@ -119,7 +125,6 @@ func main() {
 			log.Printf("HTTP redirect server ListenAndServe: %v", err)
 		}
 	}()
-	c := NewCommandLineFlags()
 	if err := srv.ListenAndServeTLS(*c.CertFile, *c.KeyFile, ch); err != nil {
 		panic(err)
 	}
