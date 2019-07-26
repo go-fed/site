@@ -17,14 +17,14 @@ import (
 type CommandLineFlags struct {
 	CertFile       *string
 	KeyFile        *string
-	SkipGeneration bool
+	SkipGeneration *bool
 }
 
 func NewCommandLineFlags() *CommandLineFlags {
 	c := &CommandLineFlags{
 		CertFile:       flag.String("cert", "tls.crt", "Path to certificate public file"),
 		KeyFile:        flag.String("key", "tls.key", "Path to certificate private key file"),
-		SkipGeneration: flag.Bool("skip", false, "Skip generating the godoc"),
+		SkipGeneration: flag.Bool("skip-godoc", false, "Skip generating the godoc"),
 	}
 	flag.Parse()
 	if err := c.validate(); err != nil {
@@ -69,13 +69,13 @@ func main() {
 	}
 
 	var rOpt []server.RepositoryOptions
-	if !c.SkipGeneration {
-		rOpt = server.RepositoryOptions{
+	if !*c.SkipGeneration {
+		rOpt = []server.RepositoryOptions{{
 			ProjectName:         "activity",
 			HttpsCloneURL:       activityURL,
 			DiskCacheFilePath:   "./tmp/activity",
 			GitOperationTimeout: time.Minute,
-		}
+		}}
 	}
 	fav := server.FaviconOptions{
 		Png16Path:  "./gofed-16.png",

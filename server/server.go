@@ -311,6 +311,9 @@ func (s *Server) ListenAndServeTLS(certFile, keyFile string, shutdownDone <-chan
 	s.consumeErrors(errMux, ctx, wg)
 	s.consumePackages(pkgMux, clearMux, ctx, wg)
 	s.syncLauncher(ctx, wg)
+	if len(s.repo) == 0 {
+		s.createServeMux(nil)
+	}
 	err := s.server.ListenAndServeTLS(certFile, keyFile)
 	log.Println("Server ListenAndServeTLS Done")
 	cancelFunc()
