@@ -8,23 +8,20 @@ import (
 	"github.com/go-fed/site/server"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"time"
 )
 
 type CommandLineFlags struct {
-	CertFile       *string
-	KeyFile        *string
-	SkipGeneration *bool
+	CertFile *string
+	KeyFile  *string
 }
 
 func NewCommandLineFlags() *CommandLineFlags {
 	c := &CommandLineFlags{
-		CertFile:       flag.String("cert", "tls.crt", "Path to certificate public file"),
-		KeyFile:        flag.String("key", "tls.key", "Path to certificate private key file"),
-		SkipGeneration: flag.Bool("skip-godoc", false, "Skip generating the godoc"),
+		CertFile: flag.String("cert", "tls.crt", "Path to certificate public file"),
+		KeyFile:  flag.String("key", "tls.key", "Path to certificate private key file"),
 	}
 	flag.Parse()
 	if err := c.validate(); err != nil {
@@ -45,10 +42,6 @@ func (c *CommandLineFlags) validate() error {
 
 func main() {
 	c := NewCommandLineFlags()
-	activityURL, err := url.Parse("https://github.com/go-fed/activity.git")
-	if err != nil {
-		panic(err)
-	}
 	tlsConfig := &tls.Config{
 		MinVersion:               tls.VersionTLS12,
 		CurvePreferences:         []tls.CurveID{tls.CurveP256, tls.X25519},
@@ -68,15 +61,6 @@ func main() {
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 	}
 
-	var rOpt []server.RepositoryOptions
-	if !*c.SkipGeneration {
-		rOpt = []server.RepositoryOptions{{
-			ProjectName:         "activity",
-			HttpsCloneURL:       activityURL,
-			DiskCacheFilePath:   "./tmp/activity",
-			GitOperationTimeout: time.Minute,
-		}}
-	}
 	fav := server.FaviconOptions{
 		Png16Path:  "./gofed-16.png",
 		Png32Path:  "./gofed-32.png",
@@ -86,7 +70,6 @@ func main() {
 	}
 	opts := server.ServerOptions{
 		TemplateFiles: []string{"tmpl.tmpl"},
-		Repositories:  rOpt,
 		HttpServer:    httpsServer,
 		RefreshRate:   time.Hour * 24,
 		Favicon:       fav,
@@ -107,7 +90,6 @@ func main() {
 			http.Redirect(w, req, fmt.Sprintf("https://%s%s", req.Host, req.URL), http.StatusMovedPermanently)
 		}),
 	}
-	ch := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
@@ -118,14 +100,13 @@ func main() {
 		if err := httpsServer.Shutdown(context.Background()); err != nil {
 			log.Printf("HTTP server Shutdown: %v", err)
 		}
-		close(ch)
 	}()
 	go func() {
 		if err := redir.ListenAndServe(); err != http.ErrServerClosed {
 			log.Printf("HTTP redirect server ListenAndServe: %v", err)
 		}
 	}()
-	if err := srv.ListenAndServeTLS(*c.CertFile, *c.KeyFile, ch); err != nil {
+	if err := srv.ListenAndServeTLS(*c.CertFile, *c.KeyFile); err != nil {
 		panic(err)
 	}
 }

@@ -12,32 +12,26 @@ import (
 )
 
 const (
-	notFoundTemplate     = "notFound"
-	homeTemplate         = "home"
-	tutorialTemplate     = "tutorial"
-	repositoryTemplate   = "repository"
-	repositoriesTemplate = "repositories"
-	tagTemplate          = "tag"
-	packageTemplate      = "package"
-	refreshingTemplate   = "refresh"
+	notFoundTemplate         = "notFound"
+	homeTemplate             = "home"
+	goFedTutorialTemplate    = "gofedtutorial"
+	activityTutorialTemplate = "activitytutorial"
+	activityStreamsTemplate  = "activitystreamsref"
+	activityPubTemplate      = "activitypubref"
+	httpSigsTemplate         = "httpsigsref"
+	apcoreTemplate           = "apcoreref"
+	activityGlanceTemplate   = "activityglance"
 )
 
 type data struct {
-	HomeData         *homeData
-	TutorialData     *tutorialData
-	RepositoriesData *repositoriesData
-	OrgData          *orgData
-	RepositoryData   []*repositoryData
-}
-
-type orgData struct {
-	Path string
-	Name string
-}
-
-type repositoriesData struct {
-	Path string
-	C    *commonData
+	HomeData              *homeData
+	GoFedTutorialData     *tutorialData
+	ActivityTutorialData  *tutorialData
+	ActivityStreamsData   *referenceData
+	ActivityPubData       *referenceData
+	HttpSigData           *referenceData
+	ApCoreData            *referenceData
+	ActivityPubGlanceData *tutorialData
 }
 
 type commonData struct {
@@ -62,28 +56,9 @@ type tutorialData struct {
 	C    *commonData
 }
 
-type repositoryData struct {
-	Name    string
-	Path    string
-	TagData []*tagData
-	C       *commonData
-}
-
-type tagData struct {
-	Name        string
-	Path        string
-	PackageData []*packageData
-	C           *commonData
-	Parent      *repositoryData
-}
-
-type packageData struct {
-	Name    string
-	Path    string
-	Package *doc.Package
-	FSet    *token.FileSet
-	C       *commonData
-	Parent  *tagData
+type referenceData struct {
+	Path string
+	C    *commonData
 }
 
 type renderer struct {
@@ -143,26 +118,30 @@ func (r *renderer) Home(w io.Writer, data *homeData) error {
 	return r.execute(w, homeTemplate, data)
 }
 
-func (r *renderer) Tutorial(w io.Writer, data *tutorialData) error {
-	return r.execute(w, tutorialTemplate, data)
+func (r *renderer) GoFedTutorial(w io.Writer, data *tutorialData) error {
+	return r.execute(w, goFedTutorialTemplate, data)
 }
 
-func (r *renderer) AllRepositories(w io.Writer, data *repositoriesData) error {
-	return r.execute(w, repositoriesTemplate, data)
+func (r *renderer) ActivityTutorial(w io.Writer, data *tutorialData) error {
+	return r.execute(w, activityTutorialTemplate, data)
 }
 
-func (r *renderer) Repository(w io.Writer, data *repositoryData) error {
-	return r.execute(w, repositoryTemplate, data)
+func (r *renderer) ActivityStreamsReference(w io.Writer, data *referenceData) error {
+	return r.execute(w, activityStreamsTemplate, data)
 }
 
-func (r *renderer) Tag(w io.Writer, data *tagData) error {
-	return r.execute(w, tagTemplate, data)
+func (r *renderer) ActivityPubReference(w io.Writer, data *referenceData) error {
+	return r.execute(w, activityPubTemplate, data)
 }
 
-func (r *renderer) Package(w io.Writer, data *packageData) error {
-	return r.execute(w, packageTemplate, data)
+func (r *renderer) HttpSigReference(w io.Writer, data *referenceData) error {
+	return r.execute(w, httpSigsTemplate, data)
 }
 
-func (r *renderer) Refreshing(w io.Writer, data *homeData) error {
-	return r.execute(w, refreshingTemplate, data)
+func (r *renderer) ApCoreReference(w io.Writer, data *referenceData) error {
+	return r.execute(w, apcoreTemplate, data)
+}
+
+func (r *renderer) ActivityGlanceTutorial(w io.Writer, data *tutorialData) error {
+	return r.execute(w, activityGlanceTemplate, data)
 }
