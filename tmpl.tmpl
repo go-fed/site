@@ -462,7 +462,7 @@ points.</p></aside>
 <li><a href="#Stubbing-Future">Stubbing For An Actor</a></li>
 <li><a href="#Get-Federating-Actor">Get A Federating Actor</a></li>
 <li><a href="#Hooking-It-All-Together">Hooking It All Together</a></li>
-<li><a href="#Non-AP-Side">The Non-AP Side</a></li>
+<li><a href="#Sending-Side">The Sending Side</a></li>
 <li><a href="#Congratulations">Congratulations!</a></li>
 <li><a href="#Further-Considerations">Further Considerations</a></li>
 </ol>
@@ -1062,8 +1062,177 @@ remains is to set up the HTTP routing to match the IRI paths used when creating
 this implementation.</p>
 
 <h2 id="Hooking-It-All-Together">Hooking It All Together</h2>
-<aside class="caution"><p>Under construction.</p></aside>
-<h2 id="Non-AP-Side">The Non-AP Side</h2>
+<p>An <span class="code">Actor</span>, like the
+<span class="code">FederatingActor</span> we have, has only 4 methods (comments omitted):</p>
+<pre><span class="keyword">type</span> <span class="type">Actor</span> <span class="keyword">interface</span> {
+	PostInbox(c <span class="type">context.Context</span>, w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) (<span class="type">bool</span>, <span class="type">error</span>)
+	GetInbox(c <span class="type">context.Context</span>, w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) (<span class="type">bool</span>, <span class="type">error</span>)
+	PostOutbox(c <span class="type">context.Context</span>, w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) (<span class="type">bool</span>, <span class="type">error</span>)
+	GetOutbox(c <span class="type">context.Context</span>, w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) (<span class="type">bool</span>, <span class="type">error</span>)
+}</pre>
+<p>These are built around handling an actor's inbox and outbox. It is sufficient
+to call into these methods in a normal <span class="code">http.ServeMux</span>
+that maps a path for an inbox or outbox. In fact, most of the challenge in
+this section is mentally keeping track of which paths are meant to represent an
+actor, their inbox, their outbox, etc. The paths you use to
+hook into the <span class="code">http.ServeMux</span> will also need to match
+the <span class="code">id</span> properties of the ActivityStreams data you
+serve. If your <span class="code">Database</span> is designed to do this when
+it is told to Get something, this property naturally arises.</p>
+<p>For the demo app, let's only have one actor we want to logically represent:
+me (aka: you)! Here is a basic set up:</p>
+<pre>actor := pub.NewFederatingActor(s, s, db, s)
+mux := http.NewServeMux()
+<span class="comment">// Map the `me` actor's inbox to the path `/actors/me/inbox`</span>
+mux.HandleFunc(<span class="literal">"/actors/me/inbox"</span>, <span class="keyword">func</span>(w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) {
+	<span class="keyword">if</span> isActivityPubRequest, err := actor.GetInbox(w, r); err != <span class="keyword">nil</span> {
+		<span class="comment">// Do something with `err`</span>
+		<span class="keyword">return</span>
+	} <span class="keyword">else if</span> isActivityPubRequest {
+		<span class="comment">// Go-fed handled the ActivityPub GET request to the inbox</span>
+		<span class="keyword">return</span>
+	} <span class="keyword">else if</span> isActivityPubRequest, err := actor.PostInbox(w, r); err != <span class="keyword">nil</span> {
+		<span class="comment">// Do something with `err`</span>
+		<span class="keyword">return</span>
+	} <span class="keyword">else if</span> isActivityPubRequest {
+		<span class="comment">// Go-fed handled the ActivityPub POST request to the inbox</span>
+		<span class="keyword">return</span>
+	}
+	<span class="comment">// Here we return an error, but you may just as well decide
+	// to render a webpage instead. But be sure to apply appropriate
+	// authorizations. There's no guarantees about authorization at
+	// this point.</span>
+	http.Error(<span class="literal">"Non-ActivityPub request"</span>, http.StatusBadRequest)
+	<span class="keyword">return</span>
+})
+<span class="comment">// Map the `me` actor's inbox to the path `/arbitrary/me/outbox`</span>
+mux.HandleFunc(<span class="literal">"/arbitrary/me/outbox"</span>, <span class="keyword">func</span>(w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) {
+	<span class="keyword">if</span> isActivityPubRequest, err := actor.GetOutbox(w, r); err != <span class="keyword">nil</span> {
+		<span class="comment">// Do something with `err`</span>
+		<span class="keyword">return</span>
+	} <span class="keyword">else if</span> isActivityPubRequest {
+		<span class="comment">// Go-fed handled the ActivityPub GET request to the outbox</span>
+		<span class="keyword">return</span>
+	} <span class="keyword">else if</span> isActivityPubRequest, err := actor.PostOutbox(w, r); err != <span class="keyword">nil</span> {
+		<span class="comment">// Do something with `err`</span>
+		<span class="keyword">return</span>
+	} <span class="keyword">else if</span> isActivityPubRequest {
+		<span class="comment">// Go-fed handled the ActivityPub POST request to the outbox</span>
+		<span class="keyword">return</span>
+	}
+	<span class="comment">// Here we return an error, but you may just as well decide
+	// to render a webpage instead. But be sure to apply appropriate
+	// authorizations. There's no guarantees about authorization at
+	// this point.</span>
+	http.Error(<span class="literal">"Non-ActivityPub request"</span>, http.StatusBadRequest)
+	<span class="keyword">return</span>
+})
+</pre>
+<p>Pretty straightforward to use! Note here that we are using one
+<span class="code">Actor</span> to logically map to one actor in our demo app.
+This is not a limitation. A go-fed <span class="code">Actor</span> can handle
+any number of actors, so feel free to use more complex Mux solutions that lets
+you handle any number of actors, all calling into the same go-fed
+<span class="code">Actor</span>. Think of the go-fed
+<span class="code">Actor</span> being a definition of behavior, not state. It
+is stateless, but your injected state via the
+<span class="code">Database</span> gives it the data to operate on.</p>
+<p>Finally, we need to serve our actor's ActivityStreams data itself. We're
+serving the inbox and outbox now, which is dandy, but no one can discover them
+since they are a part of the not-yet-served actor.</p>
+<p>For any other data that isn't inboxes and outboxes, that is simply a GET
+to a resource, the <span class="code">github.com/go-fed/activity/pub</span>
+package has a helper that makes it a breeze:</p>
+<pre>
+<span class="comment">// NewActivityStreamsHandler creates a HandlerFunc to serve ActivityStreams</span>
+<span class="comment">// requests which are coming from other clients or servers that wish to obtain</span>
+<span class="comment">// an ActivityStreams representation of data.</span>
+<span class="comment">//</span>
+<span class="comment">// Strips retrieved ActivityStreams values of sensitive fields ('bto' and 'bcc')</span>
+<span class="comment">// before responding with them. Sets the appropriate HTTP status code for</span>
+<span class="comment">// Tombstone Activities as well.</span>
+<span class="keyword">func</span> NewActivityStreamsHandler(db <span class="type">Database</span>, clock <span class="type">Clock</span>) <span class="type">HandlerFunc</span>
+</pre>
+<p>We've already created a <span class="code">Database</span> and a
+<span class="code">Clock</span>, so obtaining one is easy:</p>
+<pre>asHandler := pub.NewActivityStreamsHandler(db, s)
+</pre>
+<p>So, what is this <span class="code">HandlerFunc</span>? It's a function very
+similar to the inbox and outbox functions on the
+<span class="code">Actor</span>:</p>
+<pre><span class="comment">// HandlerFunc determines whether an incoming HTTP request is an ActivityStreams</span>
+<span class="comment">// GET request, and if so attempts to serve ActivityStreams data.</span>
+<span class="comment">//</span>
+<span class="comment">// If an error is returned, then the calling function is responsible for writing</span>
+<span class="comment">// to the ResponseWriter as part of error handling.</span>
+<span class="comment">//</span>
+<span class="comment">// If 'isASRequest' is false and there is no error, then the calling function</span>
+<span class="comment">// may continue processing the request, and the HandlerFunc will not have</span>
+<span class="comment">// written anything to the ResponseWriter. For example, a webpage may be served</span>
+<span class="comment">// instead.</span>
+<span class="comment">//</span>
+<span class="comment">// If 'isASRequest' is true and there is no error, then the HandlerFunc</span>
+<span class="comment">// successfully served the request and wrote to the ResponseWriter.</span>
+<span class="comment">//</span>
+<span class="comment">// Callers are responsible for authorized access to this resource.</span>
+<span class="keyword">type</span> HandlerFunc <span class="keyword">func</span>(c <span class="type">context.Context</span>, w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) (isASRequest <span class="type">bool</span>, err <span class="type">error</span>)
+</pre>
+<p>So if we wanted to serve our actor at a specific HTTP endpoint, we can do
+the following:</p>
+<pre><span class="comment">// Host the `me` actor at `/anything/me`</span>
+mux.HandleFunc(<span class="literal">"/anything/me"</span>, <span class="keyword">func</span>(w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) {
+	<span class="comment">// If any authentication/authorization needs to happen, apply it here</span>
+	<span class="keyword">if</span> isActivityPubRequest, err := asHandler(r.Context(), w, r); err != <span class="keyword">nil</span> {
+		<span class="comment">// Do something with `err`</span>
+		<span class="keyword">return</span>
+	} <span class="keyword">else if</span> isActivityPubRequest {
+		<span class="comment">// Go-fed handled the ActivityPub GET request for this particular IRI</span>
+		<span class="keyword">return</span>
+	}
+	<span class="comment">// Here we return an error, but you may just as well decide
+	// to render a webpage instead. But be sure you've already
+	// applied the appropriate authorizations.</span>
+	http.Error(<span class="comment">"Non-ActivityPub request"</span>, http.StatusBadRequest)
+	<span class="keyword">return</span>
+})
+</pre>
+<aside class="caution"><p>Check your <span class="code">Database</span>'s Get
+method to ensure that when returning "me" actor data for
+<span class="code">"/anything/me"</span> the database is correctly setting the
+inbox to <span class="code">"/actors/me/inbox"</span> and outbox to
+<span class="code">"/arbitrary/me/outbox"</span>. Keeping your HTTP endpoints
+and linked-data links in ActivityStreams synchronized is a necessary
+headache.</p></aside>
+<p>Similar to how the <span class="code">Actor</span> is a create-once and
+use-multiple-times type, the <span class="code">HandlerFunc</span> can be reused
+for every path you want to serve ActivityStreams data:</p>
+<pre><span class="comment">// Notice we are serving a different endpoint for the disco.</span>
+mux.HandleFunc(<span class="literal">"/disco/panic"</span>, <span class="keyword">func</span>(w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) {
+	<span class="comment">// If any authentication/authorization needs to happen, apply it here</span>
+
+	<span class="comment">// Notice we are still using the same `asHandler`! Except in
+	// this case, `myDB` will get a different IRI to load from the
+	// datastore, which means this handler will serve different
+	// ActivityStreams data.</span>
+	<span class="keyword">if</span> isActivityPubRequest, err := asHandler(r.Context(), w, r); err != <span class="keyword">nil</span> {
+		<span class="keyword">return</span>
+	} <span class="keyword">else if</span> isActivityPubRequest {
+		<span class="keyword">return</span>
+	}
+	http.Error(<span class="comment">"Non-ActivityPub request"</span>, http.StatusBadRequest)
+	<span class="keyword">return</span>
+})
+</pre>
+<aside class="caution"><p>Once data is served at a certain IRI, there is not a
+well-established way in the community to migrate that content to another IRI.
+Choose your HTTP paths wisely.</p></aside>
+<p>Sweet! So far we've implemented some interfaces for our demo app, and hooked
+them up to some HTTP handlers to handle incoming peer requests. Receiving
+federated is nice and all, but what about sending federated messages? All that
+remains in this tutorial is learning how to have our actors send out these
+messages!</p>
+
+<h2 id="Sending-Side">The Sending Side</h2>
 <aside class="caution"><p>Under construction.</p></aside>
 <h2 id="Congratulations">Congratulations!</h2>
 <aside class="caution"><p>Under construction.</p></aside>
