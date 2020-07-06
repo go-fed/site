@@ -1215,7 +1215,7 @@ Create method we write.</p></aside>
 	// reader.</span>
 }
 
-<span class="keyword">func</span> (m *<span class="type">myDB</span>) NewId(c <span class="type">context.Context</span>,
+<span class="keyword">func</span> (m *<span class="type">myDB</span>) NewID(c <span class="type">context.Context</span>,
 	t <span class="type">vocab.Type</span>) (id *<span class="type">url.URL</span>, err <span class="type">error</span>) {
 	<span class="comment">// Generate a new `id` for the ActivityStreams object `t`.</span>
 
@@ -2526,7 +2526,7 @@ the actual documentation):</p>
 	GetInbox(c context.<span class="type">Context</span>, r *http.<span class="type">Request</span>, rw <span class="type">RWType</span>) (vocab.<span class="type">OrderedCollectionType</span>, <span class="type">error</span>)
 	GetOutbox(c context.<span class="type">Context</span>, r *http.<span class="type">Request</span>, rw <span class="type">RWType</span>) (vocab.<span class="type">OrderedCollectionType</span>, <span class="type">error</span>)
 	<span class="comment">// Creating new ids</span>
-	NewId(c context.<span class="type">Context</span>, t <span class="type">Typer</span>) *url.<span class="type">URL</span>
+	NewID(c context.<span class="type">Context</span>, t <span class="type">Typer</span>) *url.<span class="type">URL</span>
 	<span class="comment">// Obtaining the public key for another user for verification purposes</span>
 	GetPublicKey(c context.<span class="type">Context</span>, publicKeyId <span class="type">string</span>) (pubKey crypto.<span class="type">PublicKey</span>, algo httpsig.<span class="type">Algorithm</span>, user *url.<span class="type">URL</span>, err <span class="type">error</span>)
 	<span class="comment">// Whether adding/removing is permitted</span>
