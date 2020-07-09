@@ -336,6 +336,7 @@ svg {
 <p>- Looking to extend the fediverse?</p>
 <p>- Would you like a pony?</p>
 <h2><a href="https://github.com/go-fed/activity">go-fed/activity</a> can help with all your non-equine needs!</h2>
+<p><b>v1.0.0 has been released as of July 9, 2020! Woot!</b></p>
 <p>ActivityPub is a protocol that different social applications use to communicate
 with each other. This lets users on
 <a href="https://joinmastodon.org/">Mastodon</a>,
@@ -943,7 +944,7 @@ put them on the <span class="code">myService</span> type we just created:</p>
 	<span class="keyword">return</span>
 }
 
-<span class="keyword">func</span> (*<span class="type">myService</span>) Callbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
+<span class="keyword">func</span> (*<span class="type">myService</span>) FederatingCallbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
 	<span class="comment">// TODO</span>
 	<span class="keyword">return</span>
 }
@@ -1310,7 +1311,7 @@ of checks you've configured such as Authentication and Blocked. Go-fed provides
 a bunch of default behavior for you out of the box, so a valid implementation
 that handles Activities like Create, Update, Delete, Add, Remove, and the others
 listed in the specification is simply:</p>
-<pre><span class="keyword">func</span> (*<span class="type">myService</span>) Callbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
+<pre><span class="keyword">func</span> (*<span class="type">myService</span>) FederatingCallbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
 	<span class="comment">// Return the default ActivityPub callbacks, and nothing in `other`.</span>
 	<span class="keyword">return</span>
 }
@@ -1321,7 +1322,7 @@ want your app to light up a disco ball light with your app's
 addition</i> to the existing ActivityPub behavior of "adding a Like Activity to
 the likes collection of all targeted Objects that are owned on this instance" by
 doing this complicated maneuver:</p>
-<pre><span class="keyword">func</span> (*<span class="type">myService</span>) Callbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
+<pre><span class="keyword">func</span> (*<span class="type">myService</span>) FederatingCallbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
 	wrapped = <span class="type">FederatingWrappedCallbacks</span>{
 		<span class="comment">// Anything we set in the callbacks, is in *addition* to the out-of-the-box support.</span>
 		Like: <span class="keyword">func</span>(c <span class="type">context.Context</span>, like <span class="type">vocab.ActivityStreamsLike</span>) <span class="type">error</span> {
@@ -1338,7 +1339,7 @@ doing this complicated maneuver:</p>
 Flag Activity, because it isn't providing a default behavior! Oh no! World's
 over, time to pack up and leave. Or, you simply put your callback in the
 <span class="code">other</span> variable:</p>
-<pre><span class="keyword">func</span> (*<span class="type">myService</span>) Callbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
+<pre><span class="keyword">func</span> (*<span class="type">myService</span>) FederatingCallbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
 	other = []<span class="type">interface{}</span>{
 		<span class="comment">// Elements in `other` need to follow this function signature pattern.</span>
 		<span class="keyword">func</span>(c <span class="type">context.Context</span>, flag <span class="type">vocab.ActivityStreamsFlag</span>) <span class="type">error</span> {
@@ -1357,7 +1358,7 @@ of the box. Hey, no hard feelings. I get it, not every match is made in heaven.
 There's a way to completely override the default behavior in a very delicate
 way: simply provide the function in the <span class="code">other</span>
 variable:</p>
-<pre><span class="keyword">func</span> (*<span class="type">myService</span>) Callbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
+<pre><span class="keyword">func</span> (*<span class="type">myService</span>) FederatingCallbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="keyword">interface{}</span>, err <span class="type">error</span>) {
 	other = []<span class="type">interface{}</span>{
 		<span class="comment">// This element follows the function signature pattern, but FederatingWrappedCallbacks
 		// has a default for Add! Therefore, go-fed will pick the function here, completely replacing
@@ -1758,12 +1759,283 @@ serve non-actor endpoints. Finally, we hooked up a way to programmatically have
 an actor send out messages across the Fediverse.</p>
 <p>Pat yourself on the back, that was a huge amount of work!</p>
 <h2 id="Further-Considerations">Further Considerations</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>Check out the
+<a href="https://socialhub.activitypub.rocks/">SocialHub forum</a>
+to talk ActivityPub in general, or to open conversations about
+<a href="https://socialhub.activitypub.rocks/c/software/go-fed/18">go-fed</a>
+in particular.</p>
+<p>If you want to learn more about the vocabularies supported by go-fed and how
+to generally use the ActivityStreams vocabulary, check the
+<a href="{{.C.Data.ActivityStreamsData.Path}}">streams</a> reference page.</p>
+<p>To get a good reference of the ActivityPub behaviors supported by the
+library, see the
+<a href="{{.C.Data.ActivityPubData.Path}}">pub</a> reference page.</p>
+</p>
 {{template "footer" .C}}{{end}}
 
 {{/* AS REFERENCE TEMPLATE */}}
 {{define "activitystreamsref"}}{{template "header" .C}}<header><h1>activity/streams Reference</h1></header>
+<p>The <span class="code">streams</span> package is the building block of the
+ActivityStreams vocabularies supported in Go. It is mostly code-generated so
+that the code at compile and run times does not need JSON-LD understanding to
+function. Because it is code-generated, learning to use this library's patterns
+means you can still remain proficient even when new vocabularies are added!</p>
+<h2>Table Of Contents</h2>
+<ol>
+<li><a href="#One-Page-Overview">One-Page Overview</a></li>
+<li><a href="#Working-With-Types">Working With Types</a></li>
+<li><a href="#Working-With-Properties">Working With Functional Properties</a></li>
+<li><a href="#Working-With-Non-Functional-Properties">Working With Non-Functional Properties</a></li>
+<li><a href="#Serialization">Serialization</a></li>
+<li><a href="#Supported-Vocabularies">Supported Vocabularies</a></li>
+</ol>
+
+<h2 id="One-Page-Overview">One-Page Overview</h2>
+<p>Let's dive right into the basics of creating a piece of ActivityStreams data:</p>
+<pre><span class="keyword">import</span> (
+  <span class="literal">"github.com/go-fed/activity/streams"</span>
+  <span class="literal">"github.com/go-fed/activity/streams/vocab"</span>
+)
+
+<span class="comment">// Create a Note object</span>
+<span class="comment">var</span> note <span class="type">vocab.ActivityStreamsNote</span> = streams.NewActivityStreamsNote()
+
+<span class="comment">// Create an `id` property and set it on the Note</span>
+id, _ := url.Parse(<span class="literal">"https://example.com/some/path/to/this/note"</span>)
+<span class="comment">var</span> idProperty <span class="type">vocab.JSONLDIdProperty</span> = streams.NewJSONLDIdProperty()
+idProperty.Set(id)
+
+<span class="comment">// Set the `id` property on our Note.</span>
+note.SetJSONLDId(idProperty)
+</pre>
+<p>Be sure you're taking note! Ha, punny.</p>
+<p>Vocabularies will define types and properties. Both vocabulary types and
+vocabulary properties are represented in Golang as concrete types. In
+the example above the <span class="code type">vocab.ActivityStreamsNote</span>
+vocabulary type is a Golang type, and the
+<span class="code type">vocab.JSONLDIdProperty</span> vocabulary property is
+also a Golang type. That means to set the value
+<span class="code literal">"https://example.com/some/path/to/this/note"</span>
+on the id property, it is a little cumbersome because the value must be set on a
+property first, and then the property needs to be set on a type.</p>
+<p>Processing an existing note also has its considerations:</p>
+<pre><span class="comment">// Let's try to add content to our note. First, let's get the property.</span>
+contentProperty := note.GetActivityStreamsContent()
+
+<span class="comment">// WARNING: Missing properties are `nil`!</span>
+if contentProperty == <span class="keyword">nil</span> {
+	<span class="comment">// Create a new property and set it on the note.</span>
+	contentProperty = streams.NewActivityStreamsContentProperty()
+	<span class="comment">// Treat properties as pointers, not values. Setting a
+	// property is not a value-copy so if we modify
+	// the property later, any modification will be
+	// reflected in the note.</span>
+	note.SetActivityStreamsContent(contentProperty)
+}
+
+<span class="comment">// Now we are guaranteed a non-`nil` property: let's add content!</span>
+contentProperty.AppendXMLSchemaString(<span class="literal">"jorts"</span>)
+</pre>
+<aside class="caution"><p>When getting a property, always check whether it is
+nil!</p>
+<p>Allocating zero values is not cheap, so the library avoids it as much as
+possible.</p></aside>
+<p>In the example above, we first get the property. It may be nil when it
+didn't exist in the JSON payload or hasn't yet been set on a new type. So we
+created a new property in that case, which can then be inspected or modified in
+later code.</p>
+<p>Some properties are "functional" and can only hold one value or one IRI:</p>
+<pre><span class="comment">// The "published" property is functional: It can only have at most one value.</span>
+published := streams.NewActivityStreamsPublishedProperty()
+<span class="comment">// We can set a time...</span>
+published.Set(time.Now())
+<span class="comment">// ...or, in this very unusual practice, set it as an IRI</span>
+iri, _ := url.Parse(<span class="literal">"https://go-fed.org/some/path"</span>)
+published.SetIRI(iri)
+
+<span class="keyword">if</span> published.IsIRI() {
+  fmt.Println(published.GetIRI())
+} <span class="keyword">else if</span> published.IsXMLSchemaDateTime() {
+  fmt.Println(published.Get())
+}
+</pre>
+<p>Some properties are "non-functional" and can only hold multiple values, IRIs,
+or a mix:</p>
+<pre><span class="comment">// The "object" property is non-functional: It can have many values.</span>
+object := streams.NewActivityStreamsObjectProperty()
+<span class="comment">// We can append...</span>
+object.AppendActivityStreamsNote(note)
+<span class="comment">// ...or prepend...</span>
+object.PrependActivityStreamsArticle(streams.NewActivityStreamsArticle())
+<span class="comment">// ...and IRIs too</span>
+iri, _ := url.Parse(<span class="literal">"https://go-fed.org/foo"</span>)
+object.AppendIRI(iri)
+
+<span class="comment">// An iterator interface lets you work with each element</span>
+<span class="keyword">for</span> iter := object.Begin(); iter != iter.End(); iter = iter.Next() {
+  <span class="keyword">if</span> iter.IsActivityStreamsNote() {
+    note := iter.GetActivityStreamsNote()
+  } <span class="keyword">else if</span> published.IsActivityStreamsArticle() {
+    article := iter.GetActivityStreamsArticle()
+  } <span class="keyword">else if</span> published.IsIRI() {
+    iri := iter.GetIRI()
+  }
+}
+</pre>
+<p>These properties let you build up and process a container of all sorts of
+differently-typed elements. A naive Golang slice is not good enough without
+resorting to <span class="code"><span class="keyword">interface</span>{}</span>
+and type switches, and this hides away that boilerplate from you.</p>
+<p>Finally, there's the question of how to serialize to and from JSON:</p>
+<pre><span class="comment">// Deserialize a JSON payload</span>
+jsonstr := <span class="literal">`{
+  "@context": ["https://www.w3.org/ns/activitystreams"],
+  "id":"https://go-fed.org/foo"
+  "name":"Foo Bar",
+  "inbox":"https://go-fed.org/foo/inbox",
+  "outbox":"https://go-fed.org/foo/outbox",
+  "type":"Person",
+  "url":"https://go-fed.org/foo"
+}`</span>
+<span class="keyword">var</span> m <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}
+_ := json.Unmarshal([]<span class="type">byte</span>(jsonstr), &amp;m)
+
+<span class="comment">// Next, we prepare a streams.JSONResolver, providing one or more callbacks.</span>
+<span class="keyword">var</span> person <span class="type">vocab.ActivityStreamsPerson</span>
+resolver := streams.NewJSONResolver(<span class="keyword">func</span>(c context.Context, p vocab.ActivityStreamsPerson) <span class="type">error</span> {
+  <span class="comment">// Store the person in the enclosing scope, for later.</span>
+  person = p
+  <span class="keyword">return nil</span>
+}, <span class="keyword">func</span>(c context.Context, note vocab.ActivityStreamsNote) <span class="type">error</span> {
+  <span class="comment">// We can treat the type differently.</span>
+  fmt.Println(note)
+  <span class="keyword">return nil</span>
+})
+<span class="comment">// It will call back a function we provide if it is of a matching type,</span>
+<span class="comment">// or returns streams.ErrNoCallbackMatch when we didn't give it a matcher for</span>
+<span class="comment">// the type, or streams.ErrUnhandledType if it is a type unknown to go-fed.</span>
+ctx := context.Background()
+err := resolver.Resolve(ctx, jsonMap)
+
+<span class="comment">// Serialize to a JSON payload</span>
+<span class="keyword">var</span> jsonmap <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}
+jsonmap, _ := streams.Serialize(person) <span class="comment">// WARNING: Do not call the Serialize() method on person</span>
+b, _ := json.Marshal(jsonmap)
+</pre>
+<aside class="caution"><p>Do not call the <span class="code">Serialize()</span>
+method on types directly, use the <span class="code">streams.Serialize</span> function!</p>
+<p>This ensures your JSON-LD <span class="code">@context</span> field is
+properly set.</p></aside>
+<p>Hopefully these short examples gets you started with the ActivityStreams
+vocabulary! The rest of the documentation addresses the finer points of using
+the streams API.</p>
+<h2 id="Working-With-Types">Working With Types</h2>
+<p>The <a href="#One-Page-Overview">One-Page Overview</a> went over how to
+create new types, get and set their properties. This covers a lot of use-cases,
+but the <span class="code">streams</span> package does more.</p>
+<p>The vocabulary typing hierarchy is impossible to accurately represent using
+traditional object-oriented programming and notions of object hierarchies, but
+is well-suited to Golang's interface duck-typing. If you wish to operate on a
+type in general:</p>
+<pre><span class="comment">// vocab.Type represents an ActivityStreams type in general</span>
+<span class="keyword">var</span> aType <span class="type">vocab.Type</span> = streams.NewActivityStreamsCollection()
+<span class="comment">// ...which can be used for serializing...</span>
+jsonmap, _ := streams.Serialize(aType)
+b, _ := json.Marshal(jsonmap)
+</pre>
+<p>Which, uh, seems pretty boring. But!</p>
+<pre><span class="comment">// ...or branching logic based on its precise type...</span>
+resolver := streams.NewTypeResolver(<span class="keyword">func</span>(c context.Context, oc vocab.ActivityStreamsOrderedCollection) <span class="type">error</span> {
+  fmt.Println(oc)
+  <span class="keyword">return nil</span>
+}, <span class="keyword">func</span>(c context.Context, c vocab.ActivityStreamsCollection) <span class="type">error</span> {
+  fmt.Println(c)
+  <span class="keyword">return nil</span>
+})
+<span class="comment">// This is a TypeResolver, not a JSONResolver, so it accepts a vocab.Type</span>
+<span class="comment">// instead of a map[string]interface{}.</span>
+ctx := context.Background()
+err := resolver.Resolve(ctx, aType)
+</pre>
+<p>But... why are you yawning? Oh gee!</p>
+<pre><span class="comment">// ...or expertly inspecting the type's inheritance within and across vocabularies.</span>
+object := streams.NewActivityStreamsObject()
+activity := streams.NewActivityStreamsActivity()
+repo := streams.NewForgeFedRepository()
+
+<span class="comment">// Determining if a Type has a parent of type Object from the ActivityStreams vocabulary.</span>
+<span class="keyword">if</span> streams.ActivityStreamsObjectIsExtendedBy(object) {
+  fmt.Println(<span class="literal">"I'm false, since a type doesn't extend itself."</span>)
+} <span class="keyword">else if</span> streams.ActivityStreamsObjectIsExtendedBy(activity) {
+  fmt.Println(<span class="literal">"I'm true."</span>)
+} <span class="keyword">else if</span> streams.ActivityStreamsObjectIsExtendedBy(repo) {
+  fmt.Println(<span class="literal">"I'm true, too!"</span>)
+}
+
+<span class="comment">// Determining if a ForgeFed Repository extends from a Type.</span>
+<span class="keyword">if</span> streams.ForgeFedRepositoryExtends(object) {
+  fmt.Println(<span class="literal">"I'm true!"</span>)
+} <span class="keyword">else if</span> streams.ForgeFedRepositoryExtends(activity) {
+  fmt.Println(<span class="literal">"I'm false."</span>)
+} <span class="keyword">else if</span> streams.ForgeFedRepositoryExtends(repo) {
+  fmt.Println(<span class="literal">"I'm false, too! A type doesn't extend from itself."</span>)
+}
+
+<span class="comment">// Determining if a ForgeFed Repository is the Type or extends from a Type.</span>
+<span class="keyword">if</span> streams.IsOrExtendsForgeFedRepository(object) {
+  fmt.Println(<span class="literal">"I'm true!"</span>)
+} <span class="keyword">else if</span> streams.IsOrExtendsForgeFedRepository(activity) {
+  fmt.Println(<span class="literal">"I'm false."</span>)
+} <span class="keyword">else if</span> streams.IsOrExtendsForgeFedRepository(repo) {
+  fmt.Println(<span class="literal">"I'm true now, since it is the same type!"</span>)
+}
+
+<span class="comment">// Determining if an Activity is disjoint.</span>
+<span class="keyword">if</span> streams.ActivityStreamsActivityIsDisjointWith(object) {
+  fmt.Println(<span class="literal">"I'm false."</span>)
+} <span class="keyword">else if</span> streams.ActivityStreamsActivityIsDisjointWith(activity) {
+  fmt.Println(<span class="literal">"I'm false -- a type is never disjoint with itself."</span>)
+} <span class="keyword">else if</span> streams.ActivityStreamsActivityIsDisjointWith(repo) {
+  fmt.Println(<span class="literal">"I'm also false!"</span>)
+}
+</pre>
+<p>Wow! Navigating the RDF vocabulary at runtime is pretty neato. The last thing
+that you can do with the type hierarchy is to create your own duck-type
+interfaces if you want to group the types by a set of properties they have:</p>
+<pre><span class="comment">// For application reasons, we care about types with "name" and "shares" properties</span>
+<span class="keyword">type</span> <span class="type">nameShares</span> <span class="keyword">interface</span> {
+  GetActivityStreamsName() <span class="type">vocab.ActivityStreamsNameProperty</span>
+  GetActivityStreamsShares() <span class="type">vocab.ActivityStreamsSharesProperty</span>
+  SetActivityStreamsName(<span class="type">vocab.ActivityStreamsNameProperty</span>)
+  SetActivityStreamsShares(<span class="type">vocab.ActivityStreamsSharesProperty</span>)
+}
+
+<span class="keyword">if</span> v, ok := aType.(<span class="type">nameShares</span>); ok {
+  _ = v.GetActivityStreamsName()
+  _ = v.GetActivityStreamsShares()
+}
+</pre>
+<p>Hopefully this allows you to harness the full power of the RDF vocabularies
+without having to write boilerplate code and sifting through the details of
+the vocabulary specifications. Go-fed will compile and let you put properties
+where they are allowed to go, or at runtime let you determine and route code
+execution by the exact type or by navigating the RDF hierarchy. Finally, you
+can always duck-type to create your own interfaces as needed. It's up to you
+to use these tools in a sensical way.</p>
+<h2 id="Working-With-Properties">Working With Functional Properties</h2>
 <aside class="caution"><p>Under construction.</p></aside>
+<h2 id="Working-With-Non-Functional-Properties">Working With Non-Functional Properties</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="Serialization">Serialization</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="Supported-Vocabularies">Supported Vocabularies</h2>
+<p>The following vocabularies are supported to some degree:</p>
+<ul>
+<li>All <a href="https://www.w3.org/TR/activitystreams-vocabulary/">Core and Extended ActivityStreams</a> types.</li>
+<li>All <a href="">ForgeFed</a> types.</li>
+<li>About half of the <a href="https://github.com/go-fed/activity/issues/122">Mastodon/Toot</a> types and properties.</li>
+<li>A few select items from the <a href="https://w3c-ccg.github.io/security-vocab/">Security</a> proposal.</li>
+</ul>
 {{template "footer" .C}}{{end}}
 
 {{/* AP REFERENCE TEMPLATE */}}
