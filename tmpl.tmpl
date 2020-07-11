@@ -1788,6 +1788,7 @@ means you can still remain proficient even when new vocabularies are added!</p>
 <li><a href="#Working-With-Non-Functional-Properties">Working With Non-Functional Properties</a></li>
 <li><a href="#Serialization">Serialization</a></li>
 <li><a href="#Supported-Vocabularies">Supported Vocabularies</a></li>
+<li><a href="#IRIs-And-Deserialization">IRIs And Deserialization</a></li>
 </ol>
 
 <h2 id="One-Page-Overview">One-Page Overview</h2>
@@ -1818,6 +1819,12 @@ also a Golang type. That means to set the value
 <span class="code literal">"https://example.com/some/path/to/this/note"</span>
 on the id property, it is a little cumbersome because the value must be set on a
 property first, and then the property needs to be set on a type.</p>
+<p>You may have noticed the pattern used when naming the Golang types. The
+is
+<span class="code">&lt;Vocabulary Name&gt;&lt;Type Name&gt;</span>
+for a vocabulary's types and
+<span class="code">&lt;Vocabulary Name&gt;&lt;Property Name&gt;Property</span>
+for a vocabulary's properties.</p>
 <p>Processing an existing note also has its considerations:</p>
 <pre><span class="comment">// Let's try to add content to our note. First, let's get the property.</span>
 contentProperty := note.GetActivityStreamsContent()
@@ -2023,9 +2030,189 @@ execution by the exact type or by navigating the RDF hierarchy. Finally, you
 can always duck-type to create your own interfaces as needed. It's up to you
 to use these tools in a sensical way.</p>
 <h2 id="Working-With-Properties">Working With Functional Properties</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>Functional properties contain at most one value at a time. Setting a value
+on it will clear out any previous value on the property. These properties do not
+have iterators and have neither Append nor Prepend methods.</p>
+<p>Creating these properties is straightforward:</p>
+<pre><span class="comment">// Constructors are New&lt;Vocabulary Name&gt;&lt;Property Name&gt;Property</span>
+first := streams.NewActivityStreamsFirstProperty()
+<span class="keyword">if</span> first.HasAny() {
+  fmt.Println(<span class="literal">"I won't print because `first` has no values!"</span>)
+}</pre>
+<p>You can always set an ActivityStreams property to be an IRI, but it doesn't
+always make sense to do so. For the ActivityStreams first property it can make
+sense for your application:</p>
+<pre>iri, _ := url.Parse(<span class="literal">https://go-fed.org/foobar/page/0</span>)
+first.SetIRI(iri)
+<span class="keyword">if</span> first.HasAny() {
+  fmt.Println(<span class="literal">"I will print!"</span>)
+}
+<span class="keyword">if</span> first.IsIRI() {
+  fmt.Println(<span class="literal">"I will print, too!"</span>)
+}
+<span class="keyword">if</span> first.IsActivityStreamsCollectionPage() {
+  fmt.Println(<span class="literal">"I won't print because the value in `first` is not an ActivityStreams CollectionPage!"</span>)
+}</pre>
+<p>Otherwise, you can embed a literal object as the value:</p>
+<pre>first.SetActivityStreamsCollectionPage(streams.NewActivityStreamsCollectionPage())
+<span class="keyword">if</span> first.HasAny() {
+  fmt.Println(<span class="literal">"I will still print!"</span>)
+}
+<span class="keyword">if</span> first.IsIRI() {
+  fmt.Println(<span class="literal">"I won't print! The IRI was overwritten"</span>)
+}
+<span class="keyword">if</span> first.IsActivityStreamsCollectionPage() {
+  fmt.Println(<span class="literal">"I will print now!"</span>)
+}</pre>
+<p>And when processing the property, remember to check for
+<span class="code keyword">nil</span> results:</p>
+<pre><span class="keyword">if nil</span> == first.GetActivityStreamsCollectionPage() {
+  fmt.Println(<span class="literal">"I won't print, because the value is a CollectionPage!"</span>)
+}
+<span class="keyword">if nil</span> == first.GetIRI() {
+  fmt.Println(<span class="literal">"I will print, because the value is not an IRI!"</span>)
+}</pre>
+<p>A functional property's value will either be a JSON-LD IRI, or an object.
+And that object should also have an IRI. So you may want to get the property's
+IRI regardless whether it is holding an IRI literal, or some kind of type. To
+do so requires importing the <span class="code">github.com/activity/pub</span>
+package:</p>
+<pre><span class="keyword">import</span> (
+  <span class="literal">"github.com/activity/pub"</span>
+)
+
+<span class="keyword">var</span> iri *<span class="type">url.URL</span>
+<span class="keyword">var</span> err <span class="type">error</span>
+iri, err = pub.ToId(first)</pre>
+<p>Properties are code generated from vocabulary definitions, so the methods
+available ensure that you are only able to process and manipulate properties
+using schema-compliant values. If you want to set a value on a property and
+go-fed doesn't have a method available, it is probably because it is not
+allowed by the vocabulary's definition. This will let you focus on the core of
+your application's needs without having to fight the ActivityStreams type
+system.</p>
+<p>For example, the following will not compile:</p>
+<pre>first.SetActivityStreamsActivity(streams.NewActivityStreamsActivity())</pre>
+<p>Because it would not follow the vocabulary definition, and hence there is no
+<span class="code">SetActivityStreamsActivity</span> method for the
+<span class="code type">streams.ActivityStreamsFirstProperty</span>
+type.</p>
 <h2 id="Working-With-Non-Functional-Properties">Working With Non-Functional Properties</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>Non-functional properties, contrary to the name, aren't broken! They are
+properties that can have any number of values. Plus, each value does not have to
+be the same type. This presents challenges in the Golang world, where naive
+slices like to be a single type, even if that type is a generic
+<span class="code"><span class="keyword">interface</span>{}</span>. What a
+headache that presents! Fortunately, this library makes processing such data a
+breeze.</p>
+<p>The non-functional properties build off of the
+<a href="#Working-With-Properties">Functional Properties</a> concepts, so
+reading that section first is recommended.</p>
+<p>A functional property can be identified by having methods for obtaining
+iterators like <span class="code">Begin</span>
+or <span class="code">At</span>
+or <span class="code">Len</span>, or methods that allow appending
+or prepending values. Creating these properties is like their functional
+property bretheren:</p>
+<pre><span class="comment">// Constructors are New&lt;Vocabulary Name&gt;&lt;Property Name&gt;Property</span>
+items := streams.NewActivityStreamsItemsProperty()
+
+<span class="keyword">if</span> items.Empty() {
+  fmt.Println(<span class="literal">"I will print because `items` has no values!"</span>)
+}</pre>
+<p>Without knowing the existing length of the property, we can go ahead and
+append or prepend different values:</p>
+<pre><span class="comment">// Append an IRI</span>
+iri, _ := url.Parse(<span class="literal">"https://go-fed.org/baz"</span>)
+items.AppendIRI(iri)
+
+<span class="comment">// Prepend an ActivityStreams Note</span>
+items.PrependActivityStreamsNote(streams.NewActivityStreamsNote())
+
+<span class="comment">// Append some Type, without knowing its exact type. It will return</span>
+<span class="comment">// an error if it is not allowed.</span>
+<span class="keyword">var</span> someType <span class="type">vocab.Type</span> = streams.NewForgeFedCommit()
+<span class="keyword">if</span> err := items.AppendType(someType); err != <span class="keyword">nil</span> {
+  <span class="comment">// This will not print: ForgeFed Commit is OK to set on `items` property.</span>
+  fmt.Println(err)
+}
+
+<span class="comment">// At this point, the `items` property holds:</span>
+<span class="comment">//    [Note, "https://go-fed.org/baz", Commit]</span></pre>
+<aside class="best"><p>Use the error returned from <span class="code">AppendType</span>
+and <span class="code">PrependType</span> methods.</p></aside>
+<p>However, one the <span class="code">Len</span> is known, you can manipulate
+the values of the property using indices:</p>
+<pre><span class="keyword">if</span> items.Len() == <span class="literal">3</span> {
+  fmt.Println(<span class="literal">"I will print!"</span>)
+}
+
+<span class="comment">// The `items` property holds:</span>
+<span class="comment">//    [Note, "https://go-fed.org/baz", Commit]</span>
+<span class="comment">// Let's insert a ForgeFed Ticket like:</span>
+<span class="comment">//    [Note, Ticket, "https://go-fed.org/baz", Commit]</span>
+items.InsertForgeFedTicket(<span class="literal">1</span>, streams.NewForgeFedTicket())
+
+<span class="comment">// Let's remove the Note and replace it with an Article:</span>
+<span class="comment">//    [Article, Ticket, "https://go-fed.org/baz", Commit]</span>
+items.SetActivityStreamsArticle(<span class="literal">0</span>, streams.NewActivityStreamsArticle())
+
+<span class="comment">// Let's remove the IRI completely:</span>
+<span class="comment">//    [Article, Ticket, Commit]</span>
+items.Remove(<span class="literal">2</span>)
+
+<span class="comment">// Let's swap the Ticket's and Commit's places:</span>
+<span class="comment">//    [Article, Commit, Ticket]</span>
+items.Swap(<span class="literal">1</span>, <span class="literal">2</span>)</pre>
+<aside class="caution"><p>Iterators are invalidated when using
+<span class="code">Insert</span>,
+<span class="code">Set</span>,
+<span class="code">Remove</span>, and
+<span class="code">Swap</span> methods.</p></aside>
+<p>These methods are great when you need to manipulate the non-functional
+property in general and you do not really care what the values are. However,
+this tends to be an uncommon concern.</p>
+<p>A far more common use-case is examining and manipulating the elements
+directly! For this, the library provies iterators. Iterators are powerful
+because an iterator behaves exactly like a
+<a href="#Working-With-Properties">functional property</a>. So rather than
+writing code that has to handle functional properties, and then re-writing
+code to handle non-functional properties via
+<span class="code">Insert</span>/<span class="code">Set</span>/<span class="code">Remove</span>/<span class="code">Swap</span>
+methods, you can just process functional properties and then use iterators:
+<pre><span class="comment">// The `items` property holds:</span>
+<span class="comment">//    [Article, Commit, Ticket]</span>
+<span class="comment">// Let's examine the elements and process any Articles.</span>
+
+<span class="comment">// First, a helper interface, which can be implemented by a</span>
+<span class="comment">// functional property or an iterator!</span>
+<span class="keyword">type</span> <span class="type">getsArticle</span> <span class="keyword">interface</span> {
+  GetActivityStreamsArticle() streams.ActivityStreamsArticle
+}
+
+<span class="comment">// Let's create a function for processing:</span>
+markArticleToRead := <span class="keyword">func</span>(ga <span class="type">getsArticle</span>) {
+  article := ga.GetActivityStreamsArticle()
+  <span class="keyword">if</span> article == <span class="keyword">nil</span> {
+    <span class="keyword">return</span>
+  }
+  fmt.Println(<span class="literal">"Hey, check this out: "</span>, article)
+}
+
+<span class="comment">// Now we can process lot of different properties! For example,</span>
+<span class="comment">// this will process the one Article in our `items` property.</span>
+<span class="keyword">for</span> iter := items.Begin(); iter != items.End(); iter = iter.Next() {
+  markArticleToRead(iter)
+}
+
+<span class="comment">// But we could process a `subject` functional property too!</span>
+<span class="comment">// For example, if there was a "Person authored Article"</span>
+<span class="comment">// Relationship.</span>
+subject := streams.NewActivityStreamsSubjectProperty()
+markArticleToRead(subject)</pre>
+<p>This gives you a lot of flexibility when processing non-functional properties
+across your application. It prepares you to write code that is scalable across
+the many varied vocabulary types.</p>
 <h2 id="Serialization">Serialization</h2>
 <aside class="caution"><p>Under construction.</p></aside>
 <h2 id="Supported-Vocabularies">Supported Vocabularies</h2>
@@ -2036,6 +2223,8 @@ to use these tools in a sensical way.</p>
 <li>About half of the <a href="https://github.com/go-fed/activity/issues/122">Mastodon/Toot</a> types and properties.</li>
 <li>A few select items from the <a href="https://w3c-ccg.github.io/security-vocab/">Security</a> proposal.</li>
 </ul>
+<h2 id="IRIs-And-Deserialization">IRIs And Deserialization</h2>
+<aside class="caution"><p>Under construction.</p></aside>
 {{template "footer" .C}}{{end}}
 
 {{/* AP REFERENCE TEMPLATE */}}
