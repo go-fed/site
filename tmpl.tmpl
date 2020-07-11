@@ -1905,24 +1905,24 @@ and type switches, and this hides away that boilerplate from you.</p>
 <p>Finally, there's the question of how to serialize to and from JSON:</p>
 <pre><span class="comment">// Deserialize a JSON payload</span>
 jsonstr := <span class="literal">`{
-  "@context": ["https://www.w3.org/ns/activitystreams"],
-  "id":"https://go-fed.org/foo"
-  "name":"Foo Bar",
-  "inbox":"https://go-fed.org/foo/inbox",
-  "outbox":"https://go-fed.org/foo/outbox",
-  "type":"Person",
-  "url":"https://go-fed.org/foo"
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id":       "https://go-fed.org/foo",
+  "name":     "Foo Bar",
+  "inbox":    "https://go-fed.org/foo/inbox",
+  "outbox":   "https://go-fed.org/foo/outbox",
+  "type":     "Person",
+  "url":      "https://go-fed.org/foo"
 }`</span>
 <span class="keyword">var</span> m <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}
-_ := json.Unmarshal([]<span class="type">byte</span>(jsonstr), &amp;m)
+_ = json.Unmarshal([]<span class="type">byte</span>(jsonstr), &amp;m)
 
 <span class="comment">// Next, we prepare a streams.JSONResolver, providing one or more callbacks.</span>
 <span class="keyword">var</span> person <span class="type">vocab.ActivityStreamsPerson</span>
-resolver := streams.NewJSONResolver(<span class="keyword">func</span>(c context.Context, p vocab.ActivityStreamsPerson) <span class="type">error</span> {
+resolver := streams.NewJSONResolver(<span class="keyword">func</span>(c <span class="type">context.Context</span>, p <span class="type">vocab.ActivityStreamsPerson</span>) <span class="type">error</span> {
   <span class="comment">// Store the person in the enclosing scope, for later.</span>
   person = p
   <span class="keyword">return nil</span>
-}, <span class="keyword">func</span>(c context.Context, note vocab.ActivityStreamsNote) <span class="type">error</span> {
+}, <span class="keyword">func</span>(c <span class="type">context.Context</span>, note <span class="type">vocab.ActivityStreamsNote</span>) <span class="type">error</span> {
   <span class="comment">// We can treat the type differently.</span>
   fmt.Println(note)
   <span class="keyword">return nil</span>
@@ -1931,11 +1931,11 @@ resolver := streams.NewJSONResolver(<span class="keyword">func</span>(c context.
 <span class="comment">// or returns streams.ErrNoCallbackMatch when we didn't give it a matcher for</span>
 <span class="comment">// the type, or streams.ErrUnhandledType if it is a type unknown to Go-Fed.</span>
 ctx := context.Background()
-err := resolver.Resolve(ctx, jsonMap)
+err := resolver.Resolve(ctx, m)
 
 <span class="comment">// Serialize to a JSON payload</span>
 <span class="keyword">var</span> jsonmap <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}
-jsonmap, _ := streams.Serialize(person) <span class="comment">// WARNING: Do not call the Serialize() method on person</span>
+jsonmap, _ = streams.Serialize(person) <span class="comment">// WARNING: Do not call the Serialize() method on person</span>
 b, _ := json.Marshal(jsonmap)
 </pre>
 <aside class="caution"><p>Do not call the <span class="code">Serialize()</span>
@@ -1961,10 +1961,10 @@ b, _ := json.Marshal(jsonmap)
 </pre>
 <p>Which, uh, seems pretty boring. But!</p>
 <pre><span class="comment">// ...or branching logic based on its precise type...</span>
-resolver := streams.NewTypeResolver(<span class="keyword">func</span>(c context.Context, oc vocab.ActivityStreamsOrderedCollection) <span class="type">error</span> {
+resolver := streams.NewTypeResolver(<span class="keyword">func</span>(c <span class="type">context.Context</span>, oc <span class="type">vocab.ActivityStreamsOrderedCollection</span>) <span class="type">error</span> {
   fmt.Println(oc)
   <span class="keyword">return nil</span>
-}, <span class="keyword">func</span>(c context.Context, c vocab.ActivityStreamsCollection) <span class="type">error</span> {
+}, <span class="keyword">func</span>(c <span class="type">context.Context</span>, c <span class="type">vocab.ActivityStreamsCollection</span>) <span class="type">error</span> {
   fmt.Println(c)
   <span class="keyword">return nil</span>
 })
@@ -2081,11 +2081,11 @@ first.SetIRI(iri)
 <span class="keyword">if nil</span> == first.GetIRI() {
   fmt.Println(<span class="literal">"I will print, because the value is not an IRI!"</span>)
 }</pre>
-<p>A functional property's value will either be a JSON-LD IRI, or an object.
-And that object should also have an IRI. So you may want to get the property's
-IRI regardless whether it is holding an IRI literal, or some kind of type. To
-do so requires importing the <span class="code">github.com/activity/pub</span>
-package:</p>
+<p>A functional property's value will either be a JSON-LD IRI, or an object, or
+some other primitive value like a boolean. When it is an object, that object
+must also have an IRI identifier. You may find that you just want to obtain IRIs
+without caring if it was an IRI literal or an object. To do so requires
+importing the <span class="code">github.com/activity/pub</span> package:</p>
 <pre><span class="keyword">import</span> (
   <span class="literal">"github.com/activity/pub"</span>
 )
@@ -2196,7 +2196,7 @@ methods, you can just process functional properties and then use iterators:
 <span class="comment">// First, a helper interface, which can be implemented by a</span>
 <span class="comment">// functional property or an iterator!</span>
 <span class="keyword">type</span> <span class="type">getsArticle</span> <span class="keyword">interface</span> {
-  GetActivityStreamsArticle() streams.ActivityStreamsArticle
+  GetActivityStreamsArticle() <span class="type">vocab.ActivityStreamsArticle</span>
 }
 
 <span class="comment">// Let's create a function for processing:</span>
@@ -2222,8 +2222,107 @@ markArticleToRead(subject)</pre>
 <p>This gives you a lot of flexibility when processing non-functional properties
 across your application. It prepares you to write code that is scalable across
 the many varied vocabulary types.</p>
+<p>Like a functional property, an iterator will either be a JSON-LD IRI, an
+object, or a value. If you're simply wanting an IRI, without caring whether the
+value is an IRI literal or an object, you can still use the
+<span class="code">github.com/activity/pub</span> package:</p>
+<pre><span class="keyword">import</span> (
+  <span class="literal">"github.com/activity/pub"</span>
+)
+
+<span class="keyword">var</span> iri *<span class="type">url.URL</span>
+<span class="keyword">var</span> err <span class="type">error</span>
+<span class="keyword">for</span> iter := items.Begin(); iter != items.End(); iter = iter.Next() {
+	iri, err = pub.ToId(iter)
+}</pre>
 <h2 id="Serialization">Serialization</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>The <span class="code">streams</span> package provides three different
+<span class="code">Resolver</span> types. The
+<span class="code type">JSONResolver</span> and
+<span class="code type">TypeResolver</span> each have a constructor that accepts
+one or more functions of the form:</p>
+<pre><span class="keyword">func</span>(c <span class="type">context.Context</span>, t <span class="type">vocab.&lt;Some Type&gt;</span>) <span class="type">error</span></pre>
+<p>which you provide as a callback. This means to successfully turn a JSON
+payload that's expected to be an Article:</p>
+<pre>jsonstr := <span class="literal">`{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id":       "https://go-fed.org/foo",
+  "name":     "Foo Bar",
+  "inbox":    "https://go-fed.org/foo/inbox",
+  "outbox":   "https://go-fed.org/foo/outbox",
+  "type":     "Article",
+  "url":      "https://go-fed.org/foo"
+}`</span>
+<span class="keyword">var</span> m <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}
+_ = json.Unmarshal([]<span class="type">byte</span>(jsonstr), &amp;m)
+
+<span class="keyword">var</span> article <span class="type">vocab.ActivityStreamsArticle</span>
+resolver := streams.NewJSONResolver(<span class="keyword">func</span>(c <span class="type">context.Context</span>, a <span class="type">vocab.ActivityStreamsArticle</span>) <span class="type">error</span> {
+  <span class="comment">// Example: store the article in the enclosing scope, for later.</span>
+  article = a
+  <span class="comment">// We could pass an error back up, if desired.</span>
+  <span class="keyword">return nil</span>
+})
+ctx := context.Background()
+err := resolver.Resolve(ctx, m)
+
+<span class="keyword">if</span> err == streams.ErrNoCallbackMatch {
+  <span class="comment">// The JSON payload is a type supported by Go-Fed but did</span>
+  <span class="comment">// NOT match any of our provided functions.</span>
+} <span class="keyword">else if</span> err == streams.ErrUnhandledType {
+  <span class="comment">// The JSON payload is NOT a type supported by Go-Fed.</span>
+} <span class="keyword">else</span> {
+  <span class="comment">// The error came from one of the callback functions that</span>
+  <span class="comment">// we provided.</span>
+}</pre>
+<p>When serializing a type, do not call the
+<span class="code">Serialize</span> method on a type, but instead use the free
+function variant <span class="code">streams.Serialize</span>:</p>
+<pre><span class="keyword">var</span> jsonmap <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}
+jsonmap, _ = streams.Serialize(article)
+b, _ := json.Marshal(jsonmap)</pre>
+<aside class="caution"><p>Use <span class="code">streams.Serialize</span>, not the
+<span class="code">Serialize</span> method.</p></aside>
+<p>So far, we've looked at how to deserialize and serialize. However, the 
+<span class="code">streams.Serialize</span> function flexibly accepts any
+<span class="code type">vocab.Type</span> Go-Fed type, whereas the
+deserialization method we looked at only works when you know the specific type.
+How can you deserialize a JSON-LD payload into a
+<span class="code type">vocab.Type</span>?</p>
+<pre>jsonstr := <span class="literal">`{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id":       "https://go-fed.org",
+  "name":     "Go-Fed",
+  "inbox":    "https://go-fed.org/inbox",
+  "outbox":   "https://go-fed.org/outbox",
+  "type":     "Organization",
+  "url":      "https://go-fed.org"
+}`</span>
+<span class="keyword">var</span> m <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}
+err := json.Unmarshal([]<span class="type">byte</span>(jsonstr), &amp;m)
+
+<span class="keyword">var</span> t <span class="type">vocab.Type</span>
+t, err = streams.ToType(ctx, m)</pre>
+<p>This lets you be as specific or general as necessary when processing JSON-LD
+data. However, now that you have a <span class="code type">vocab.Type</span>,
+you may find that after a certain point it'll be necessary to resolve it further
+to its specific type. The <span class="code type">TypeResolver</span> is then
+the tool of choice, which accepts a <span class="code type">vocab.Type</span>
+instead of a
+<span class="code"><span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>{}</span>:
+<pre>typeResolver := streams.NewTypeResolver(<span class="keyword">func</span>(c <span class="type">context.Context</span>, o <span class="type">vocab.ActivityStreamsOrganization</span>) <span class="type">error</span> {
+  <span class="comment">// ...</span>
+  <span class="keyword">return nil</span>
+})
+ctx := context.Background()
+<span class="comment">// Pass in a vocab.Type instead of map[string]interface{}.</span>
+err := resolver.Resolve(ctx, t)</pre>
+<p>With 
+<span class="code type">JSONResolver</span>,
+<span class="code type">TypeResolver</span>, and
+<span class="code">streams.Serialize</span>,
+you are prepared for serializing and deserializing into the vocabulary types
+required for your application.</p>
 <h2 id="Supported-Vocabularies">Supported Vocabularies</h2>
 <p>The following vocabularies are supported to some degree:</p>
 <ul>
@@ -2233,7 +2332,27 @@ the many varied vocabulary types.</p>
 <li>A few select items from the <a href="https://w3c-ccg.github.io/security-vocab/">Security</a> proposal.</li>
 </ul>
 <h2 id="IRIs-And-Deserialization">IRIs And Deserialization</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>As mentioned in numerous sections above, often the values for properties will
+be JSON-LD IRIs, which are addresses where ActivityStreams data can be fetched.
+The <span class="code">streams</span> library does not do this fetching for you,
+so you will need to provide the method of resolving an IRI into data.</p>
+<p>Note that the current Fediverse commonly uses IRIs that use the HTTPS
+protocol and often use HTTP Signatures to indicate on which user's behalf the
+HTTP request is being made. These are conventions, but any IRI may be used to
+build the method by which the linked data is fetched so it may not always be
+specified as fetchable over HTTP, and require a different application protocol
+instead. The
+<span class="code">streams</span> package does not add any constraints to this
+by not providing any solutions either.</p>
+<p>There are two complementary libraries that can be used to address these
+concerns. The
+<a href="{{.C.Data.ActivityPubData.Path}}">Go-Fed ActivityPub Library</a>
+(<span class="code">pub</span>) provides a
+<span class="code type">HttpSigTransport</span> to dereference IRIs using HTTPS
+and HTTP Signatures. Alternatively, the
+<a href="{{.C.Data.HttpSigData.Path}}">Go-Fed HTTP Signatures Library</a>
+(<span class="code">httpsig</span>) provides primitives that let you use
+HTTP Signatures in the HTTP Client of your choice.</p>
 {{template "footer" .C}}{{end}}
 
 {{/* AP REFERENCE TEMPLATE */}}
