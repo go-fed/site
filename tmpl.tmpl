@@ -272,26 +272,30 @@ svg {
         fill: none;
 }
 .svgactor {
-  stroke-dasharray: 2;
-  stroke: black;
-  stroke-width: 2;
-  fill: lightblue;
+	stroke-dasharray: 2;
+	stroke: black;
+	stroke-width: 2;
+	fill: lightblue;
 }
 .svgpubactor {
-  fill: lightgreen;
+	fill: lightgreen;
 }
 .svgashandler {
-  fill: lightyellow;
+	fill: lightyellow;
 }
 .svgremotepeer {
-  fill: lightpink;
+	fill: lightpink;
 }
 .svgyoublock {
-  fill: lightgray;
+	fill: lightgray;
 }
 .svgyouline { stroke-dasharray: 2; }
 .svginterface {
-  fill: white;
+	fill: white;
+}
+iframe {
+	display: block;
+	margin: 0 auto;
 }
 </style>{{end}}
 
@@ -362,6 +366,16 @@ JSON-LD, or RDF.</p>
 <li>Tinkerers</li>
 <li>People that want ponies</li>
 </ul>
+<h2>Talks</h2>
+<p>Talk given at <a href="https://conf.activitypub.rocks/#home">ActivityPub Conf 2020</a>:</p>
+<iframe width="560"
+	height="315"
+	sandbox="allow-same-origin allow-scripts allow-popups"
+	src="https://conf.tube/videos/embed/952f9cef-3b97-45e4-a248-199772a23f62"
+	frameborder="0"
+	allowfullscreen></iframe>
+<p>Find more
+<a href="https://conf.tube/video-channels/apconf_channel/videos">ActivityPub Conf 2020 videos here</a>!</p>
 <h2>About This Site</h2>
 <p>This site is the canonical resource for tutorials and documentation surrounding the
 <a href="https://github.com/go-fed">go-fed</a> organization.</p>
@@ -2357,6 +2371,247 @@ HTTP Signatures in the HTTP Client of your choice.</p>
 
 {{/* AP REFERENCE TEMPLATE */}}
 {{define "activitypubref"}}{{template "header" .C}}<header><h1>activity/pub Reference</h1></header>
+<p>The <span class="code">pub</span> package is HTTP handling middleware that
+implements ActivityPub C2S (Social), S2S (Federating), or both federating specs.
+It relies on the app to provide certain interfaces for carrying out the
+necessary behaviors. As an app grows, it can use less of the middleware so that
+the app can grow into an ActivityPub implementation of its own making, if
+required.</p>
+<h2>Table Of Contents</h2>
+<ol>
+<li><a href="#One-Page-Overview">One-Page Overview</a></li>
+<li><a href="#The-Actor-Model">The Actor Model</a></li>
+<li><a href="#The-Database-Interface">The Database Interface</a></li>
+<li><a href="#The-CommonBehavior-Interface">The CommonBehavior Interface</a></li>
+<li><a href="#The-FederatingProtocol-Interface">The FederatingProtocol Interface</a></li>
+<li><a href="#The-SocialProtocol-Interface">The SocialProtocol Interface</a></li>
+<li><a href="#Serving-ActivityStreams-Data">Serving ActivityStreams Data</a></li>
+<li><a href="#Transports">Transports</a></li>
+<li><a href="#Utilities">Utilities</a></li>
+</ol>
+
+<h2 id="One-Page-Overview">One-Page Overview</h2>
+<p>The <span class="code">pub</span> package requires an app-writer to fulfill
+several interfaces, and in return gives functions and methods for handling HTTP
+requests for use within the app's HTTP Handler methods. This makes it
+middleware, where your application will still primarily implement the database,
+app-specific logic, and manage all HTTP endpoints. Yes, this means still
+managing all HTTP handlers for the app's usual web requests, in addition to the
+handlers that will delegate to this library.</p>
+<p>The overall architecture of using the <span class="code">pub</span> library
+will end up serving a HTTP request in a flow that looks like the following
+diagram, where at request time you provide the HTTP Requests (red) and the
+middleware calls back into interfaces you've implemented (white):</p>
+<svg height="400" width="610">
+  <!-- arrowhead definition -->
+  <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6"
+      markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" />
+  </marker>
+  <!-- main content -->
+  <rect x="1" y="1" width="608" height="398" class="svgborder" />
+
+  <rect x="220" y="25" width="170" height="100" class="svgborder svgremotepeer" />
+  <text x="240" y="55" class="svgtextsmall">HTTP Request</text>
+  <text x="275" y="72" class="svgtextsmaller">In/Outbox</text>
+  <text x="290" y="95" class="svgtextsmaller">Data</text>
+  <text x="245" y="109" class="svgtextsmaller">(Provided By Peer)</text>
+
+  <rect x="220" y="170" width="170" height="80" class="svgactor" />
+  <text x="260" y="200" class="svgtextsmall">pub.Actor</text>
+  <text x="262" y="220" class="svgtextsmaller">Golang Type</text>
+  <text x="240" y="234" class="svgtextsmaller">(Provided By Library)</text>
+
+  <rect x="25" y="295" width="170" height="80" class="svgborder svgapp" />
+  <text x="70" y="325" class="svgtextsmall">Database</text>
+  <text x="93" y="345" class="svgtextsmaller">State</text>
+  <text x="55" y="359" class="svgtextsmaller">(Provided By You)</text>
+
+  <rect x="220" y="295" width="170" height="80" class="svgborder svgapp" />
+  <text x="225" y="325" class="svgtextsmall">CommonBehavior</text>
+  <text x="280" y="345" class="svgtextsmaller">Behavior</text>
+  <text x="255" y="359" class="svgtextsmaller">(Provided By You)</text>
+
+  <rect x="415" y="295" width="170" height="80" class="svgborder avgapp" />
+  <text x="425" y="325" class="svgtextsmall">C/S2S Behaviors</text>
+  <text x="435" y="345" class="svgtextsmaller">Federation Behaviors</text>
+  <text x="447" y="359" class="svgtextsmaller">(Provided By You)</text>
+
+  <line x1="305" y1="125" x2="305" y2="164" class="svgdepline" marker-end="url(#arrow)" />
+  <line x1="305" y1="250" x2="305" y2="270" class="svgdepline" />
+  <line x1="110" y1="270" x2="500" y2="270" class="svgdepline" />
+  <line x1="110" y1="270" x2="110" y2="289" class="svgdepline" marker-end="url(#arrow)" />
+  <line x1="305" y1="270" x2="305" y2="289" class="svgdepline" marker-end="url(#arrow)" />
+  <line x1="500" y1="270" x2="500" y2="289" class="svgdepline" marker-end="url(#arrow)" />
+
+  <rect x="25" y="25" width="170" height="100" class="svgborder svgremotepeer" />
+  <text x="45" y="55" class="svgtextsmall">HTTP Request</text>
+  <text x="65" y="72" class="svgtextsmaller">Not In/Outbox</text>
+  <text x="95" y="95" class="svgtextsmaller">Data</text>
+  <text x="50" y="109" class="svgtextsmaller">(Provided By Peer)</text>
+
+  <rect x="25" y="170" width="170" height="80" class="svgborder svgashandler" />
+  <text x="33" y="200" class="svgtextsmall">pub.HandlerFunc</text>
+  <text x="67" y="220" class="svgtextsmaller">Golang Func</text>
+  <text x="45" y="234" class="svgtextsmaller">(Provided By Library)</text>
+
+  <line x1="110" y1="125" x2="110" y2="164" class="svgdepline" marker-end="url(#arrow)" />
+  <line x1="65" y1="250" x2="65" y2="289" class="svgdepline" marker-end="url(#arrow)" />
+</svg>
+<p>Let's quickly go over the interfaces necessary for an application to
+implement. The list of interfaces is:</p>
+<ul>
+<li><span class="code">pub.Clock</span>: A simple type that abstracts the
+server's time, so the library is not dependent on calling
+<span class="code">time.Now()</span>. Due to its simple and uninteresting
+nature, it is not shown in the above diagram.</li>
+<li><span class="code">pub.Database</span>: A way to provide the library
+access to your app's state.</li>
+<li><span class="code">pub.CommonBehavior</span>: Methods that are required
+by your application, regardless whether it is federating C2S, S2S, or both.</li>
+<li><span class="code">pub.FederatingProtocol</span>: Methods that are only
+required when doing S2S federation.</li>
+<li><span class="code">pub.SocialProtocol</span>: Methods that are only required
+when doing C2S federation.</li>
+</ul>
+<p>Deep-dives into these interfaces are elsewhere in this tutorial. For this
+one-pager, we'll assume you have successfully implemented those interfaces:</p>
+<pre>
+<span class="keyword">func</span> main() {
+	<span class="keyword">var</span> clock <span class="type">pub.Clock</span> = <span class="comment">// ...</span>
+	<span class="keyword">var</span> db <span class="type">pub.Database</span> = <span class="comment">// ...</span>
+	<span class="keyword">var</span> cb <span class="type">pub.CommonBehavior</span> = <span class="comment">// ...</span>
+	<span class="keyword">var</span> fp <span class="type">pub.FederatingProtocol</span> = <span class="comment">// ... (only for S2S)</span>
+	<span class="keyword">var</span> sp <span class="type">pub.SocialProtocol</span> = <span class="comment">// ... (only for C2S)</span>
+</pre>
+
+<p>Next is to call the appropriate kind of constructor depending on whether the
+federation you want to do is C2S, S2S, or both:</p>
+<pre>
+	<span class="comment">// Get one of the following:</span>
+	<span class="comment">// - A S2S actor...</span>
+	s2sActor := pub.NewFederatingActor(cb, fp, db, clock)
+	<span class="comment">// - A C2S actor...</span>
+	c2sActor := pub.NewSocialActor(cb, sp, db, clock)
+	<span class="comment">// - Both C2S and S2S actor...</span>
+	bothActor := pub.NewActor(cb, sp, fp, db, clock)
+</pre>
+
+<p>And those actors can be used in your HTTP handlers, here's an example handler
+for the actor's inbox:</p>
+<pre>
+	http.HandleFunc(<span class="literal">"/actor/inbox"</span>,
+		<span class="keyword">func</span>(w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) {
+			<span class="keyword">if</span> isActivityPubRequest, err := actor.GetInbox(w, r); err != <span class="keyword">nil</span> {
+				<span class="comment">// Do something with `err`</span>
+				<span class="keyword">return</span>
+			} <span class="keyword">else if</span> isActivityPubRequest {
+				<span class="comment">// Go-Fed handled the ActivityPub GET request to the inbox</span>
+				<span class="keyword">return</span>
+			} <span class="keyword">else if</span> isActivityPubRequest, err := actor.PostInbox(w, r); err != <span class="keyword">nil</span> {
+				<span class="comment">// Do something with `err`</span>
+				<span class="keyword">return</span>
+			} <span class="keyword">else if</span> isActivityPubRequest {
+				<span class="comment">// Go-Fed handled the ActivityPub POST request to the inbox</span>
+				<span class="keyword">return</span>
+			}
+			<span class="comment">// Here we return an error, but you may just as well decide
+			// to render a webpage instead. But be sure to apply appropriate
+			// authorizations. There's no guarantees about authorization at
+			// this point.</span>
+			http.Error(<span class="literal">"Non-ActivityPub request"</span>, http.StatusBadRequest)
+			<span class="keyword">return</span>
+		}
+	)
+</pre>
+<p>And similar for the outbox:</p>
+<pre>
+	http.HandleFunc(<span class="literal">"/actor/outbox"</span>,
+		<span class="keyword">func</span>(w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) {
+			<span class="keyword">if</span> isActivityPubRequest, err := actor.GetOutbox(w, r); err != <span class="keyword">nil</span> {
+				<span class="comment">// Do something with `err`</span>
+				<span class="keyword">return</span>
+			} <span class="keyword">else if</span> isActivityPubRequest {
+				<span class="comment">// Go-Fed handled the ActivityPub GET request to the outbox</span>
+				<span class="keyword">return</span>
+			} <span class="keyword">else if</span> isActivityPubRequest, err := actor.PostOutbox(w, r); err != <span class="keyword">nil</span> {
+				<span class="comment">// Do something with `err`</span>
+				<span class="keyword">return</span>
+			} <span class="keyword">else if</span> isActivityPubRequest {
+				<span class="comment">// Go-Fed handled the ActivityPub POST request to the outbox</span>
+				<span class="keyword">return</span>
+			}
+			<span class="comment">// Here we return an error, but you may just as well decide
+			// to render a webpage instead. But be sure to apply appropriate
+			// authorizations. There's no guarantees about authorization at
+			// this point.</span>
+			http.Error(<span class="literal">"Non-ActivityPub request"</span>, http.StatusBadRequest)
+			<span class="keyword">return</span>
+		}
+	)
+</pre>
+<aside class="best"><p>You are responsible for making sure the handler's
+endpoints (<span class="code literal">"/actor/inbox"</span> and
+<span class="code literal">"/actor/outbox"</span>) are also being properly set
+by your app on the ActivityStreams data for <span class="code">inbox</span> and
+<span class="code">outbox</span> properties.</p></aside>
+
+<p>Finally, you can also serve regular ActivityStreams data that is not related
+to an Actor:</p>
+<pre>
+	apHandler := pub.NewActivityStreamsHandler(db, clock)
+	http.HandleFunc(<span class="literal">"/notes"</span>,
+		<span class="keyword">func</span>(w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) {
+			<span class="comment">// Do authz/authn as required, first.</span>
+			<span class="comment">// ...</span>
+
+			<span class="comment">// Next, maybe serve ActivityStreams data.</span>
+			<span class="keyword">if</span> isActivityStreamsRequest, err := apHandler(r.Context(), w, r); err != <span class="keyword">nil</span> {
+				<span class="comment">// Do something with `err`</span>
+				<span class="keyword">return</span>
+			} <span class="keyword">else if</span> isActivityStreamsRequest {
+				<span class="comment">// Go-Fed handled the ActivityStreams GET request</span>
+				<span class="keyword">return</span>
+			}
+
+			<span class="comment">// Here we return an error, but you may just as well decide
+			// to render a webpage instead.</span>
+			http.Error(<span class="literal">"Non-ActivityPub request"</span>, http.StatusBadRequest)
+			<span class="keyword">return</span>
+		}
+	)
+
+	<span class="comment">// Don't forget to kick off the web server.</span>
+	_ = http.ListenAndServe(<span class="literal">":8080"</span>, <span class="keyword">nil</span>)
+} <span class="comment">// End of func main</span>
+</pre>
+<p>That's the one-page overview, to help get you in an app architecting mindset.
+The rest of this page goes into further detail around the Actor concept,
+specific interfaces, serving ActivityStreams data, and how to modify transport
+protocol behavior to be compatible with software such as Mastodon.</p>
+
+<h2 id="The-Actor-Model">The Actor Model</h2>
+<p>ActivityPub is built atop the Actor model, which can present a challenge to
+developers who are used to developing web applications with a traditional REST
+mindset. In the ActivityPub world Actors are concepts defined within your
+application that are the agents that do things and enact change while the
+<span class="code">Activity</span> data being exchanged describes what that
+change is within one instance of your application, and provides a description to
+federating peer applications on how they should reflect that change.</p>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="The-Database-Interface">The Database Interface</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="The-CommonBehavior-Interface">The CommonBehavior Interface</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="The-FederatingProtocol-Interface">The FederatingProtocol Interface</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="The-SocialProtocol-Interface">The SocialProtocol Interface</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="Serving-ActivityStreams-Data">Serving ActivityStreams Data</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="Transports">Transports</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="Utilities">Utilities</h2>
 <aside class="caution"><p>Under construction.</p></aside>
 {{template "footer" .C}}{{end}}
 
