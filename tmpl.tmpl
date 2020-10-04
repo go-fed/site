@@ -2386,8 +2386,11 @@ required.</p>
 <li><a href="#The-FederatingProtocol-Interface">The FederatingProtocol Interface</a></li>
 <li><a href="#The-SocialProtocol-Interface">The SocialProtocol Interface</a></li>
 <li><a href="#Serving-ActivityStreams-Data">Serving ActivityStreams Data</a></li>
+<li><a href="#Sending-ActivityStreams-Data-by-Federating">Serving ActivityStreams Data by Federating</a></li>
 <li><a href="#Transports">Transports</a></li>
 <li><a href="#Utilities">Utilities</a></li>
+<li><a href="#Federating-Wrapped-Callbacks">Federating Wrapped Callbacks</a></li>
+<li><a href="#Social-Wrapped-Callbacks">Social Wrapped Callbacks</a></li>
 </ol>
 
 <h2 id="One-Page-Overview">One-Page Overview</h2>
@@ -2496,6 +2499,13 @@ federation you want to do is C2S, S2S, or both:</p>
 	<span class="comment">// - Both C2S and S2S actor...</span>
 	bothActor := pub.NewActor(cb, sp, fp, db, clock)
 </pre>
+<aside class="best"><p>You only need one actor object per behavior you'd like to
+have. For example, if you have an Actor that represents a user, then you just
+need one <span class="code">pub.Actor</span> regardless however many users exist
+on the server, since their expected behaviors in your app are equal. On the
+other hand, an Actor that represents a bot will presumably have different
+software behaviors than a user, so for any number of bots a second
+<span class="code">pub.Actor</span> would be needed.</p></aside>
 
 <p>And those actors can be used in your HTTP handlers, here's an example handler
 for the actor's inbox:</p>
@@ -2598,20 +2608,542 @@ application that are the agents that do things and enact change while the
 <span class="code">Activity</span> data being exchanged describes what that
 change is within one instance of your application, and provides a description to
 federating peer applications on how they should reflect that change.</p>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>So if you send a <span class="code">Create</span>, which is a kind of
+Activity, to a federated peer, you are describing to that peer two important
+details:</p>
+<ol>
+<li>What object is being created; and</li>
+<li>Who is doing the creating</li>
+</ol>
+<p>Likewise, when your application receives a similar activity, it is being
+told the same details. The difference with an Actor model mindset is that
+messages are ONLY ever passed between these Actors; they are the only entities
+that can change the state of the world. ActivityPub models these Actors as
+having two endpoints:</p>
+<ol>
+<li>An Inbox for receiving other Actor messages.</li>
+<li>An Outbox for recording the messages sent to other Actors.</li>
+</ol>
+<p>That's it.</p>
+<p>This is a pretty open-ended and vague capability, so the real detail comes
+down to the specific behaviors you want to model and the specific software you
+want to federate with. Writing your application to federate with itself is easy,
+but figuring out what other applications require is hard. There are a lot of
+different <span class="code">Activity</span> types out there to describe these
+interactions, and it is not a closed set either!</p>
+<p>So when building a new application or retrofitting ActivityPub into an
+existing application, meaningful questions include:</p>
+<ul>
+<li>What kind of actors do I want to have? An actor for a user is typical, as
+is an actor representing the server itself.</li>
+<li>What kind of Activities will they send? Create, Update, and Delete are
+common.</li>
+<li>What kind of Objects will my software manipulate? Notes and Articles are
+currently the most prevalent</li>
+</ul>
+<p>The answers to these questions will help guide how to implement the rest
+of these interfaces and use the <span class="code">pub</span> library.</p>
 <h2 id="The-Database-Interface">The Database Interface</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>The <span class="code">pub.Database</span> interface is how you provide
+stateful information to the go-fed library. It gives your app the flexibility
+to use whatever implementation you wish to use or are already using.</p>
+<p>Abstracting away a datastore is not easy, so this interface follows several
+principles:</p>
+<ol>
+<li>The database is IRI-centric. It treats <span class="code">*url.URL</span>
+parameters as a primary key.</li>
+<li>The <span class="code">Lock</span> and <span class="code">Unlock</span>
+methods will be appropriately called for a particular IRI.</li>
+<li>It does <b>not</b> handle concepts like transactions out of the box.
+However, since it follows the <span class="code">context.Context</span> pattern,
+it is possible for your particular implementation to still use concepts like
+transactions.</li>
+<li>It does <b>not</b> handle concepts like caching out of the box. However,
+some APIs are designed to work with pages of a
+<span class="code">Collection</span>, rather than the entire
+<span class="code">Collection</span>, to facilitate implementations that want to
+develop their own caching capability.</li>
+</ol>
+<p>With that in mind, let's dive into the interface.</p>
+<h3><span class="code">Lock(c <span class="type">context.Context</span>, id <span class="type">*url.URL</span>) <span class="type">error</span></span></h3>
+<p>The <span class="code">Lock</span> and <span class="code">Unlock</span>
+methods let your database implementation ensure asynchronous requests perform
+atomic changes to the underlying data. The <span class="code">id</span>
+parameter acts as the primary key for the ActivityStreams entity that is
+going to be retrieved for either a read-only or read-write use-case.</p>
+<p>An implementation may decide to manage a dictionary of mutexes and lock a
+specific one, do nothing and instead rely on a particular database's transaction
+model, or something else.</p>
+<h3><span class="code">Unlock(c <span class="type">context.Context</span>, id <span class="type">*url.URL</span>) <span class="type">error</span></span></h3>
+<p>The <span class="code">Unlock</span> method is the counterpart to the
+<span class="code">Lock</span> method. The <span class="code">id</span>
+parameter acts as the primary key for the ActivityStreams entity that has
+already been retrieved, and possibly stored, for either a read-only or
+read-write use-case.</p>
+<h3><span class="code">Get(c <span class="type">context.Context</span>, id *<span class="type">url.URL</span>) (value <span class="type">vocab.Type</span>, err <span class="type">error</span>)</span></h3>
+<p>Simply fetch the ActivityStreams object with <span class="code">id</span>
+from the database. The <span class="code">streams.ToType</span> function can
+turn any arbitrary JSON-LD literal into a
+<span class="code type">vocab.Type</span> for <span class="code">value</span>.</p>
+<h3><span class="code">Create(c <span class="type">context.Context</span>, asType <span class="type">vocab.Type</span>) <span class="type">error</span></span></h3>
+<p>Store the arbitrary ActivityStreams <span class="code">asType</span> object
+into the database. It should be uniquely new to the database when examining its
+<span class="code">id</span> property, and shouldn't overwrite any existing
+data.</p>
+<aside class="best"><p>If needed, use
+<span class="code">streams.Serialize</span> to turn the
+<span class="code type">vocab.Type</span> into literal JSON-LD bytes.</p></aside>
+<h3><span class="code">Update(c <span class="type">context.Context</span>, asType <span class="type">vocab.Type</span>) <span class="type">error</span></span></h3>
+<p>This is the same as <span class="code">Create</span> except it is expected
+that the object already is in the database. The entity with the same
+<span class="code">id</span> should be overwritten by the provided value. You
+do not need to worry about the ActivityPub specification talking about whether
+an Update means a partial-update or complete-replacement, as the library has
+already done this for you, so it is safe to simply replace the row.</p>
+<h3><span class="code">Delete(c <span class="type">context.Context</span>, id *<span class="type">url.URL</span>) <span class="type">error</span></span></h3>
+<p>Simply remove the entity or row with the matching
+<span class="code">id</span>.</p>
+<h3><span class="code">Exists(c <span class="type">context.Context</span>, id *<span class="type">url.URL</span>) (exists <span class="type">bool</span>, err <span class="type">error</span>)</span></h3>
+<p>Set <span class="code">exists</span> to
+<span class="code literal">true</span> if the database has an entity or row with
+the <span class="code">id</span>.</p>
+<h3><span class="code">NewID(c <span class="type">context.Context</span>, t <span class="type">vocab.Type</span>) (id *<span class="type">url.URL</span>, err <span class="type">error</span>)</span></h3>
+<p>The library is in the process of creating a new ActivityStreams payload, and
+is calling this method to allocate a new IRI. You can inspect the context or the
+value, such as its type, in order to properly allocate an IRI meaningful to your
+application.</p>
+<aside class="caution"><p>Ensure that the newly allocated IRI can properly be
+fetched in another web handler by peers with proper authorization and
+authentication, which can be aided with
+<span class="code">pub.HandlerFunc</span>.</p></aside>
+<h3><span class="code">InboxContains(c <span class="type">context.Context</span>, inbox, id *<span class="type">url.URL</span>) (contains <span class="type">bool</span>, err <span class="type">error</span>)</span></h3>
+<p>Given the IRI of an <span class="code">inbox</span>, the implemented method
+should set <span class="code">contains</span> to
+<span class="code literal">true</span> if the ActivityStreams object with the
+<span class="code">id</span> is contained within that Inbox's
+OrderedCollection.</p>
+<p>A naive implementation may just do a linear search through the
+OrderedCollection, while certain databases may permit better lookup
+performance with a proper query.</p>
+<h3><span class="code">GetInbox(c <span class="type">context.Context</span>, inboxIRI *<span class="type">url.URL</span>) (inbox <span class="type">vocab.ActivityStreamsOrderedCollectionPage</span>, err <span class="type">error</span>)</span></h3>
+<p>This method returns the latest page of
+the <span class="code">inbox</span> corresponding to the
+<span class="code">inboxIRI</span>.</p>
+<p>At first glance this method seems a little odd. It is fine to return an empty
+<span class="code type">vocab.ActivityStreamsOrderedCollectionPage</span>. The
+library expects the very first page, which is the most recent chronologically.
+Therefore, an empty page is always treated as the "first zero" items, and the
+library does not require having any items. If you have a caching layer, it can
+more easily hide under this method with proper pagination and delayed writes to
+the database. The library is simply going to prepend an item in the
+<span class="code">orderedItems</span> property and then call
+<span class="code">SetInbox</span>.</p>
+<h3><span class="code">SetInbox(c <span class="type">context.Context</span>, inbox <span class="type">vocab.ActivityStreamsOrderedCollectionPage</span>) <span class="type">error</span></span></h3>
+<p>This method accepts a modified 
+<span class="code type">vocab.ActivityStreamsOrderedCollectionPage</span> that
+had been returned by <span class="code">GetInbox</span>. Right now the library
+only prepends new items to the
+<span class="code">orderedItems</span> property, so simple diffing can be done.
+This method should then modify the actual underlying
+<span class="code">inbox</span> to reflect the change in this page.</p>
+<h3><span class="code">GetOutbox(c <span class="type">context.Context</span>, outboxIRI *<span class="type">url.URL</span>) (inbox <span class="type">vocab.ActivityStreamsOrderedCollectionPage</span>, err <span class="type">error</span>)</span></h3>
+<p>This method returns the latest page of the <span class="code">inbox</span>
+corresponding to the <span class="code">outboxIRI</span>.</p>
+<p>It is similar in behavior to its <span class="code">GetInbox</span>
+counterpart, but for the actor's Outbox instead.</p>
+<p>See the similar documentation for <span class="code">GetInbox</span>.</p>
+<h3><span class="code">SetOutbox(c <span class="type">context.Context</span>, outbox <span class="type">vocab.ActivityStreamsOrderedCollectionPage</span>) <span class="type">error</span></span></h3>
+<p>This method accepts a modified 
+<span class="code type">vocab.ActivityStreamsOrderedCollectionPage</span> that
+had been returned by <span class="code">GetOutbox</span> to update the
+underlying <span class="code">outbox</span>.</p>
+<p>It is similar in behavior to its <span class="code">SetInbox</span>
+counterpart, but for the actor's Outbox instead.</p>
+<p>See the similar documentation for <span class="code">SetInbox</span>.</p>
+<h3><span class="code">Owns(c <span class="type">context.Context</span>, id *<span class="type">url.URL</span>) (owns <span class="type">bool</span>, err <span class="type">error</span>)</span></h3>
+<p>Sets <span class="code">owns</span> to <span class="code literal">true</span>
+when the <span class="id">id</span> is an IRI owned by this running instance of
+the server. That is, the data represented by the <span class="id">id</span> did
+not come from a federated peer.</p>
+<h3><span class="code">ActorForOutbox(c <span class="type">context.Context</span>, outboxIRI *<span class="type">url.URL</span>) (actorIRI *<span class="type">url.URL</span>, err <span class="type">error</span>)</span></h3>
+<p>Given the <span class="id">outboxIRI</span>, the associated
+<span class="id">actorIRI</span> which is the Actor's
+<span class="id">id</span>.</p>
+<p>This will only be called with <span class="id">outboxIRI</span> whose actors
+are owned by this instance.</p>
+<h3><span class="code">ActorForInbox(c <span class="type">context.Context</span>, inboxIRI *<span class="type">url.URL</span>) (actorIRI *<span class="type">url.URL</span>, err <span class="type">error</span>)</span></h3>
+<p>Given the <span class="id">inboxIRI</span>, the associated
+<span class="id">actorIRI</span> which is the Actor's
+<span class="id">id</span>.</p>
+<p>This will only be called with <span class="id">inboxIRI</span> whose actors
+are owned by this instance.</p>
+<h3><span class="code">OutboxForInbox(c <span class="type">context.Context</span>, inboxIRI *<span class="type">url.URL</span>) (outboxIRI *<span class="type">url.URL</span>, err <span class="type">error</span>)</span></h3>
+<p>Given the <span class="id">inboxIRI</span>, the associated
+<span class="id">outboxIRI</span> which is the Actor's Outbox
+<span class="id">id</span>.</p>
+<p>This will only be called with <span class="id">inboxIRI</span> whose actors
+are owned by this instance.</p>
+<h3><span class="code">Followers(c <span class="type">context.Context</span>, actorIRI *<span class="type">url.URL</span>) (followers <span class="type">vocab.ActivityStreamsCollection</span>, err <span class="type">error</span>)</span></h3>
+<p>Given the <span class="id">actorIRI</span>, which is the Actor's 
+<span class="id">id</span>, returns that Actor's followers Collection. This
+must be the complete collection of followers for that Actor.</p>
+<h3><span class="code">Following(c <span class="type">context.Context</span>, actorIRI *<span class="type">url.URL</span>) (following <span class="type">vocab.ActivityStreamsCollection</span>, err <span class="type">error</span>)</span></h3>
+<p>Given the <span class="id">actorIRI</span>, which is the Actor's 
+<span class="id">id</span>, returns that Actor's following Collection. This
+must be the complete collection of Actors they are following for that Actor.</p>
+<h3><span class="code">Liked(c <span class="type">context.Context</span>, actorIRI *<span class="type">url.URL</span>) (liked <span class="type">vocab.ActivityStreamsCollection</span>, err <span class="type">error</span>)</span></h3>
+<p>Given the <span class="id">actorIRI</span>, which is the Actor's 
+<span class="id">id</span>, returns that Actor's liked Collection. This
+must be the complete collection of liked objects for that Actor.</p>
+
 <h2 id="The-CommonBehavior-Interface">The CommonBehavior Interface</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>The <span class="code">pub.CommonBehavior</span> interface is needed
+regardless whether your application wishes to do S2S, C2S, or both
+ActivityPub protocols.</p>
+<p>These methods are best to include on a type responsible for web or
+application behavior, rather than a type responsible for data:</p>
+<h3><span class="code">AuthenticateGetInbox(c <span class="type">context.Context</span>, w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) (out <span class="type">context.Context</span>, authenticated <span class="type">bool</span>, err <span class="type">error</span>)</span></h3>
+<p>Determines whether the request is for
+a GET call to the Actor's Inbox. The <span class="code">out</span> Context is
+used in further library calls, so your app's behavior can be modified depending
+on the authenticated context, such as whether to serve private messages.</p>
+<p>If an error is returned, it is passed back to the caller of
+GetInbox. In this case, the implementation must not write a
+response to the <span class="code type">http.ResponseWriter</span> as is
+expected that the client will do so when handling the error. The
+<span class="code">authenticated</span> is ignored.</p>
+<p>If no error is returned, but authentication or authorization fails,
+then <span class="code">authenticated</span> must be
+<span class="code literal">false</span> and <span class="code">error</span>
+<span class="code literal">nil</span>. It is expected that
+the implementation handles writing to the
+<span class="code type">http.ResponseWriter</span> in this case.</p>
+<p>Finally, if the authentication and authorization succeeds, then
+then <span class="code">authenticated</span> must be
+<span class="code literal">true</span> and <span class="code">error</span>
+<span class="code literal">nil</span>. The request will continue
+to be processed.</p>
+<h3><span class="code">AuthenticateGetOutbox(c <span class="type">context.Context</span>, w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) (out <span class="type">context.Context</span>, authenticated <span class="type">bool</span>, err <span class="type">error</span>)</span></h3>
+<p>Determines whether the request is for
+a GET call to the Actor's Outbox. The <span class="code">out</span> Context is
+used in further library calls, so your app's behavior can be modified depending
+on the authenticated context, such as whether to serve private messages.</p>
+<p>If an error is returned, it is passed back to the caller of
+GetOutbox. In this case, the implementation must not write a
+response to the <span class="code type">http.ResponseWriter</span>as is expected
+that the client will do so when handling the error. The
+<span class="code">authenticated</span> is ignored.</p>
+<p>If no error is returned, but authentication or authorization fails, then
+then <span class="code">authenticated</span> must be
+<span class="code literal">false</span> and <span class="code">error</span>
+<span class="code literal">nil</span>. It is expected that
+the implementation handles writing to the
+<span class="code type">http.ResponseWriter</span> in this case.</p>
+<p>Finally, if the authentication and authorization succeeds, then
+<span class="code">authenticated</span> must be
+<span class="code literal">true</span> and <span class="code">error</span>
+<span class="code literal">nil</span>. The request will continue
+to be processed.</p>
+<h3><span class="code">GetOutbox(c <span class="type">context.Context</span>, r *<span class="type">http.Request</span>) (<span class="type">vocab.ActivityStreamsOrderedCollectionPage</span>, <span class="type">error</span>)</span></h3>
+<p>Returns a proper paginated view of the Outbox for serving in a response.
+Since <span class="code">AuthenticateGetOutbox</span> is called before this, the
+implementation is responsible for ensuring things like proper pagination,
+visible content based on permissions, and whether to leverage the
+<span class="code">pub.Database</span>'s GetOutbox method in this
+implementation.</p>
+<h3><span class="code">NewTransport(c <span class="type">context.Context</span>, actorBoxIRI *<span class="type">url.URL</span>, gofedAgent <span class="type">string</span>) (t <span class="type">Transport</span>, err <span class="type">error</span>)</span></h3>
+<p>Returns a new <span class="code type">pub.Transport</span> for federating
+with peer software. There is a
+<span class="code type">pub.HttpSigTransport</span>
+implementation provided for using HTTP and HTTP Signatures, but providing a
+different transport allows federating using different protocols.</p>
+<p>The <span class="code">actorBoxIRI</span> will be either the Inbox or Outbox
+of an Actor who is attempting to do the dereferencing or delivery. Any
+authentication scheme applied on the request must be based on this actor. The
+request must contain some sort of credential of the user, such as a HTTP
+Signature.</p>
+<p>The <span class="code">gofedAgent</span> passed in should be used by the
+<span class="code type">pub.Transport</span> implementation in the User-Agent,
+as well as the application-specific user agent string. The
+<span class="code">gofedAgent</span> will indicate this library's use as
+well as the library's version number.</p>
+<p>Any server-wide rate-limiting that needs to occur should happen in a
+<span class="code type">pub.Transport</span> implementation. This factory
+function allows this to be created, so peer servers are not DOS'd.</p>
+<p>Any retry logic should also be handled by the
+<span class="code type">pub.Transport</span> implementation.</p>
+<p>Note that the library will not maintain a long-lived pointer to the
+returned <span class="code type">pub.Transport</span> so that any private
+credentials are able to be garbage collected.</p>
+<p>For more information, see the <a href="#Transports">Transports</a> section
+below.</p>
+
 <h2 id="The-FederatingProtocol-Interface">The FederatingProtocol Interface</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>The <span class="code">pub.FederatingProtocol</span> is only needed if an
+application wants to do the S2S (Server-to-server, or federating) ActivityPub
+protocol. It supplements the <span class="code">pub.CommonBehavior</span>
+interface with the additional methods required by a federating application.</p>
+<h3><span class="code">PostInboxRequestBodyHook(c <span class="type">context.Context</span>, r *<span class="type">http.Request</span>, activity <span class="type">Activity</span>) (<span class="type">context.Context</span>, <span class="type">error</span>)</span></h3>
+<p>This is a hook that occurs after reading the request body of a POST request
+to an Actor's Inbox.</p>
+<p>Provides your application the opportunity to set contextual information
+based on the incoming <span class="code type">http.Request</span> and its body.
+Some applications simply return <span class="code">c</span> and do nothing else,
+which is OK. More commonly, software simply inspects the
+<span class="code type">http.Request</span> path to determine the actual local
+Actor being interacted with, and save such information within
+<span class="code">c</span>.</p>
+<p>Any errors returned immediately abort processing of the request and are
+returned to the caller of the Actor's <span class="code">PostInbox</span>.</p>
+<aside class="caution"><p>Do not do anything sensitive in this method. Neither
+authorization nor authentication has been attempted at the point
+<span class="code">PostInboxRequestBodyHook</span> has been called.</p></aside>
+<h3><span class="code">AuthenticatePostInbox(c <span class="type">context.Context</span>, w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) (out <span class="type">context.Context</span>, authenticated <span class="type">bool</span>, err <span class="type">error</span>)</span></h3>
+<p>This is a callback for your application to determine whether the incoming
+<span class="code type">http.Request</span> is
+<span class="code">authenticated</span> and, implicitly, authorized to proceed
+with processing the request.</p>
+<p>If an error is returned, it is passed back to the caller of
+<span class="code">PostInbox</span>. In this case, the implementation must not
+write a response to the <span class="code type">http.ResponseWriter</span> as is
+expected that the client will do so when handling the error. The 
+<span class="code">authenticated</span> value is ignored in this case.</p>
+<p>If no error is returned, but your application determines that authentication
+or authorization fails, then <span class="code">authenticated</span> must be
+<span class="code literal">false</span> and <span class="code">err</span>
+<span class="code literal">nil</span>. It is expected that the implementation
+handles writing to the <span class="code">http.ResponseWriter</span> in this
+case.</p>
+<p>Finally, if the authentication and authorization succeeds, then
+<span class="code">authenticated</span> must be
+<span class="code literal">true</span> and <span class="code">err</span>
+<span class="code literal">nil</span>. The request will continue
+to be processed.</p>
+<h3><span class="code">Blocked(c <span class="type">context.Context</span>, actorIRIs []*<span class="type">url.URL</span>) (blocked <span class="type">bool</span>, err <span class="type">error</span>)</span></h3>
+<p>Given a list of <span class="code">actorIRIs</span>, determines whether any
+are <span class="code">blocked</span> for this particular request context and
+based on the particular application's state. For example, some applications
+allow users or software instances to maintain lists of blocked peer Actors or
+domains.</p>
+<p>To determine the current user being interacted with, it is recommended to set
+such information in the <span class="code">PostInboxRequestBodyHook</span>
+method.</p>
+<p>If an error is returned, it is passed back to the caller of PostInbox.</p>
+<p>If no error is returned, but the interaction should be blocked, then
+<span class="code">blocked</span> must be <span class="code literal">true</span>
+and <span class="code">err</span> <span class="code literal">nil</span>. An
+<span class="code">http.StatusForbidden</span> will be written in the
+response.</p>
+<p>Finally, the interaction should proceed, then
+<span class="code">blocked</span> must be <span class="code literal">false</span>
+and <span class="code">err</span> <span class="code literal">nil</span>. The
+request will continue to be processed.</p>
+<h3><span class="code">FederatingCallbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">FederatingWrappedCallbacks</span>, other []<span class="type">interface</span>{}, err <span class="type">error</span>)</span></h3>
+<p>Returns the application-specific logic needed for your application as
+callbacks for the library to invoke.</p>
+<p>The library splits your applications behaviors between those specified in the
+ActivityPub spec, which will wrap your behaviors in
+<span class="code">wrapped</span>, or behaviors not known in the ActivityPub
+spec which will be provided in <span class="code">other</span>.</p>
+<p>The <span class="code">pub.FederatingWrappedCallbacks</span> returned
+provides a collection of default ActivityPub behaviors as defined in the
+specification. For more details on how to use these provided behaviors and
+supplement with your own business logic, see
+<a href="#Federating-Wrapped-Callbacks">Federating Wrapped Callbacks</a>. The
+zero-value is a valid value.</p>
+<p>If instead you wish to override the default ActivityPub behaviors, such as
+doing nothing, then the <span class="code">other</span> return value should
+contain a function with a signature like:</p>
+<pre>
+other = []<span class="keyword">interface</span>{}{
+	<span class="comment">// This function overrides the FederatingWrappedCallbacks-provided behavior</span>
+	<span class="keyword">func</span>(c <span class="type">context.Context</span>, create <span class="type">vocab.ActivityStreamsCreate</span>) <span class="type">error</span> {
+		<span class="keyword">return nil</span>
+	},
+}
+</pre>
+<p>The above would replace the library's default behavior of creating the entry
+in the database upon receiving a Create activity.</p>
+<p>If you want to handle an Activity that does not have a default behavior
+provided in <span class="code">pub.FederatingWrappedCallbacks</span>, then
+specify it in <span class="code">other</span> using a similar function
+signature.</p>
+<p>Applications are not expected to handle every single ActivityStreams
+type and extension. The unhandled ones are passed to
+<span class="code">DefaultCallback</span>.</p>
+<h3><span class="code">DefaultCallback(c <span class="type">context.Context</span>, activity <span class="type">Activity</span>) <span class="type">error</span></span></h3>
+<p>This method is called for types that the library can deserialize but
+is not handled by the application's callbacks returned in the
+<span class="code">FederatingCallbacks</span> method.</p>
+<h3><span class="code">MaxInboxForwardingRecursionDepth(c <span class="type">context.Context</span>) <span class="type">int</span></span></h3>
+<p>MaxInboxForwardingRecursionDepth determines how deep to search within
+an activity's historical chain to determine if inbox forwarding needs to occur.
+After reaching this depth, it is assumed that peers deeper than that
+conversational depth are no longer candidates for triggering the inbox
+forwarding logic.</p>
+<aside class="caution"><p>Zero or negative numbers indicate recurring infinitely, which can result in
+your application being manipulated by malicious peers. Do not return a value of
+zero nor a negative number.</p></aside>
+<h3><span class="code">MaxDeliveryRecursionDepth(c <span class="type">context.Context</span>) <span class="type">int</span></span></h3>
+<p>This method determines how deep to search within collections owned by peers
+when they are targeted to receive a delivery. After reaching this depth, it is
+assumed that peers deeper than that are no longer interested in receiving
+messages. A positive number must be returned.</p>
+<aside class="caution"><p>Zero or negative numbers indicate recurring infinitely, which can result in
+your application being manipulated by malicious peers. Do not return a value of
+zero nor a negative number.</p></aside>
+<h3><span class="code">FilterForwarding(c <span class="type">context.Context</span>, potentialRecipients []*<span class="type">url.URL</span>, a <span class="type">Activity</span>) (filteredRecipients []*<span class="type">url.URL</span>, err <span class="type">error</span>)</span></h3>
+<p>Allows the implementation to apply outbound message business logic such as
+blocks, spam filtering, and so on to a list of
+<span class="code">potentialRecipients</span> when inbox forwarding has been
+triggered. Your application <u>must</u> apply some sort of filtering, such as
+limiting delivery to an actor's followers. Otherwise, your application will
+become a vector for spam on behalf of malicious peers, and users of your
+software will be mass-blocked by their peers.</p>
+<aside class="caution"><p>The activity is provided as a reference for more
+intelligent logic to be used, but the implementation <u>must not</u> modify the
+activity.</p></aside>
+<h3><span class="code">GetInbox(c <span class="type">context.Context</span>, r *<span class="type">http.Request</span>) (<span class="type">vocab.ActivityStreamsOrderedCollectionPage</span>, <span class="type">error</span>)</span></h3>
+<p>Returns a proper paginated view of the Inbox for serving in a response.
+Since <span class="code">AuthenticateGetInbox</span> is called before this, the
+implementation is responsible for ensuring things like proper pagination,
+visible content based on permissions, and whether to leverage the
+<span class="code">pub.Database</span>'s GetInbox method in this
+implementation.</p>
+
 <h2 id="The-SocialProtocol-Interface">The SocialProtocol Interface</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>The <span class="code">pub.SocialProtocol</span> is only needed if an
+application wants to do the C2S (Client-to-server, or social) ActivityPub
+protocol. It supplements the <span class="code">pub.CommonBehavior</span>
+interface with the additional methods required by a social application.</p>
+<h3><span class="code">PostOutboxRequestBodyHook(c <span class="type">context.Context</span>, r *<span class="type">http.Request</span>, data <span class="type">vocab.Type</span>) (<span class="type">context.Context</span>, <span class="type">error</span>)</span></h3>
+<p>This is a hook that occurs after reading the request body of a POST request
+to an Actor's Outbox.</p>
+<p>Provides your application the opportunity to set contextual information
+based on the incoming <span class="code type">http.Request</span> and its body.
+Some applications simply return <span class="code">c</span> and do nothing else,
+which is OK. More commonly, software simply inspects the
+<span class="code type">http.Request</span> path to determine the actual local
+Actor being interacted with, and save such information within
+<span class="code">c</span>.</p>
+<p>Any errors returned immediately abort processing of the request and are
+returned to the caller of the Actor's <span class="code">PostOutbox</span>.</p>
+<aside class="caution"><p>Do not do anything sensitive in this method. Neither
+authorization nor authentication has been attempted at the point
+<span class="code">PostOutboxRequestBodyHook</span> has been called.</p></aside>
+<h3><span class="code">AuthenticatePostOutbox(c <span class="type">context.Context</span>, w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) (out <span class="type">context.Context</span>, authenticated <span class="type">bool</span>, err <span class="type">error</span>)</span></h3>
+<p>This is a callback for your application to determine whether the incoming
+<span class="code type">http.Request</span> is
+<span class="code">authenticated</span> and, implicitly, authorized to proceed
+with processing the request.</p>
+<p>If an error is returned, it is passed back to the caller of
+<span class="code">PostOutbox</span>. In this case, the implementation must not
+write a response to the <span class="code type">http.ResponseWriter</span> as is
+expected that the client will do so when handling the error. The 
+<span class="code">authenticated</span> value is ignored in this case.</p>
+<p>If no error is returned, but your application determines that authentication
+or authorization fails, then <span class="code">authenticated</span> must be
+<span class="code literal">false</span> and <span class="code">err</span>
+<span class="code literal">nil</span>. It is expected that the implementation
+handles writing to the <span class="code">http.ResponseWriter</span> in this
+case.</p>
+<p>Finally, if the authentication and authorization succeeds, then
+<span class="code">authenticated</span> must be
+<span class="code literal">true</span> and <span class="code">err</span>
+<span class="code literal">nil</span>. The request will continue
+to be processed.</p>
+<h3><span class="code">SocialCallbacks(c <span class="type">context.Context</span>) (wrapped <span class="type">SocialWrappedCallbacks</span>, other []<span class="type">interface</span>{}, err <span class="type">error</span>)</span></h3>
+<p>Returns the application-specific logic needed for your application as
+callbacks for the library to invoke.</p>
+<p>The library splits your applications behaviors between those specified in the
+ActivityPub spec, which will wrap your behaviors in
+<span class="code">wrapped</span>, or behaviors not known in the ActivityPub
+spec which will be provided in <span class="code">other</span>.</p>
+<p>The <span class="code">pub.SocialWrappedCallbacks</span> returned
+provides a collection of default ActivityPub behaviors as defined in the
+specification. For more details on how to use these provided behaviors and
+supplement with your own business logic, see
+<a href="#Social-Wrapped-Callbacks">Social Wrapped Callbacks</a>. The
+zero-value is a valid value.</p>
+<p>If instead you wish to override the default ActivityPub behaviors, such as
+doing nothing, then the <span class="code">other</span> return value should
+contain a function with a signature like:</p>
+<pre>
+other = []<span class="keyword">interface</span>{}{
+	<span class="comment">// This function overrides the SocialWrappedCallbacks-provided behavior</span>
+	<span class="keyword">func</span>(c <span class="type">context.Context</span>, create <span class="type">vocab.ActivityStreamsCreate</span>) <span class="type">error</span> {
+		<span class="keyword">return nil</span>
+	},
+}
+</pre>
+<p>The above would replace the library's default behavior of creating the entry
+in the database upon receiving a Create activity.</p>
+<p>If you want to handle an Activity that does not have a default behavior
+provided in <span class="code">pub.SocialWrappedCallbacks</span>, then
+specify it in <span class="code">other</span> using a similar function
+signature.</p>
+<p>Applications are not expected to handle every single ActivityStreams
+type and extension. The unhandled ones are passed to
+<span class="code">DefaultCallback</span>.</p>
+<h3><span class="code">DefaultCallback(c <span class="type">context.Context</span>, activity <span class="type">Activity</span>) <span class="type">error</span></span></h3>
+<p>This method is called for types that the library can deserialize but
+is not handled by the application's callbacks returned in the
+<span class="code">SocialCallbacks</span> method.</p>
+
 <h2 id="Serving-ActivityStreams-Data">Serving ActivityStreams Data</h2>
+<p>Serving ActivityStreams data is done by using a
+<span class="code">pub.HandlerFunc</span> within a typical
+<span class="code">http</span> handler or handler function. Your application is
+responsible for managing the incoming request's authentication and authorization
+if required at the endpoint.</p>
+<p>For example, let's suppose you want to serve all notes under the
+<span class="code literal">"/notes"</span> path, and all notes are publically
+available. If the note isn't an ActivityStreams request, then the app will serve
+a webpage instead. Then a sample implementation is simply:</p>
+<pre>
+apHandler := pub.NewActivityStreamsHandler(db, clock)
+http.HandleFunc(<span class="literal">"/notes"</span>,
+	<span class="keyword">func</span>(w <span class="type">http.ResponseWriter</span>, r *<span class="type">http.Request</span>) {
+		<span class="comment">// Maybe serve ActivityStreams data.</span>
+		<span class="keyword">if</span> isActivityStreamsRequest, err := apHandler(r.Context(), w, r); err != <span class="keyword">nil</span> {
+			<span class="comment">// Do something with `err`</span>
+			<span class="keyword">return</span>
+		} <span class="keyword">else if</span> isActivityStreamsRequest {
+			<span class="comment">// If it was an ActivityStreams request, return</span>
+			<span class="keyword">return</span>
+		}
+		<span class="comment">// If it was not an ActivityStreams request, render the webpage here
+		<span class="keyword">return</span>
+	}
+)
+</pre>
+<p>The <span class="code">apHandler</span> is reusable so long as it does not
+need to fetch from a different <span class="code">pub.Database</span> or
+<span class="code">pub.Clock</span>. This is because it will extract the
+appropriate path from the <span class="code">http.Request</span> to fetch the
+associated ActivityStreams data. In the example above, the handler will be
+called for <span class="code literal">"/notes/1"</span> and will call the
+database for the first note. It will also serve
+<span class="code literal">"/notes/5"</span> and serve the fifth note. The
+handler is equally capable of serving
+<span class="code literal">"/articles/1"</span> if you put it in the
+appropriate handler, because it is stateless function: your database provides
+its state.</p>
+<p>It is very important to serve ActivityStreams data through this handler and
+not attempt to serve it on your own, unless you have thorough understanding of
+the specification. Unlike other portions of the library, the handlers do not
+allow applications to override its behavior because non-compliance has privacy
+implications.</p>
+
+<h2 id="Sending-ActivityStreams-Data-by-Federating">Sending ActivityStreams Data by Federating</h2>
 <aside class="caution"><p>Under construction.</p></aside>
 <h2 id="Transports">Transports</h2>
 <aside class="caution"><p>Under construction.</p></aside>
 <h2 id="Utilities">Utilities</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="Federating-Wrapped-Callbacks">Federating Wrapped Callbacks</h2>
+<aside class="caution"><p>Under construction.</p></aside>
+<h2 id="Social-Wrapped-Callbacks">Social Wrapped Callbacks</h2>
 <aside class="caution"><p>Under construction.</p></aside>
 {{template "footer" .C}}{{end}}
 
