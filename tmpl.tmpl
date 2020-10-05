@@ -3136,15 +3136,191 @@ allow applications to override its behavior because non-compliance has privacy
 implications.</p>
 
 <h2 id="Sending-ActivityStreams-Data-by-Federating">Sending ActivityStreams Data by Federating</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>In order to programmatically send data to a federating peer, your application
+must support the S2S protocol by calling either
+<span class="code">pub.NewFederatingActor</span> (S2S only) or
+<span class="code">pub.NewActor</span> (C2S and S2S). These constructors return
+a <span class="code">pub.FederatingActor</span> instead of an
+<span class="code">pub.Actor</span>. The
+<span class="code">pub.FederatingActor</span> can be used to programmatically
+<span class="code">Send</span> an ActivityStreams Activity to a peer:</p>
+<pre>
+<span class="keyword">var</span> actor <span class="type">pub.FederatingActor</span> = <span class="comment">// ...</span>
+<span class="keyword">var</span> myOutbox *<span class="type">url.URL</span> = <span class="comment">// ...</span>
+<span class="keyword">var</span> myMessage <span class="type">vocab.Type</span> = <span class="comment">// ...</span>
+sentActivity, err := actor.Send(context.Background(), myOutbox, myMessage)
+</pre>
+<p>The <span class="code">myOutbox</span> path determines which Actor is the
+one delivering the Activity to a peer. This is important because it must also
+match the originating actor on <span class="code">myMessage</span>, since the
+delivery addressing is reflected within the data itself, wherever your
+application creates its ActivityStreams data:</p>
+<pre>
+<span class="comment">// This actor IRI must correspond to 'myOutbox'!</span>
+actorIRI, _ := url.Parse(<span class="comment">/* Actor IRI for 'myOutbox' */</span>)
+
+<span class="comment">// Set the actor on the 'attributedTo' property</span>
+attrTo := streams.NewActivityStreamsAttributedToProperty()
+attrTo.AppendIRI(actorIRI)
+
+<span class="comment">// Set the 'attributedTo' property on, for
+// example,  an Article to share</span>
+article := streams.NewActivityStreamsArticle()
+article.SetActivityStreamsAttributedTo(attrTo)
+</pre>
+<p>Note that the <span class="code">Send</span> method is versatile. Much like
+the C2S protocol, it can accept an ActivityStreams Object instead of an
+Activity. It will wrap the Object with a Create Activity in this case. This
+is why the <span class="code">Send</span> method returns a
+<span class="code">pub.Activity</span>, as it is returning a copy of the
+Activity actually sent to peers, but with sensitive fields present.</p>
+<p>In any case, it will acquire new identifiers to set on the Activities and/or
+Objects missing the needed identifiers.</p>
+<p>Finally, the Activity will be prepared for delivery, which may change the
+addressing properties on the Activity and/or any objects contained within.</p>
 <h2 id="Transports">Transports</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>Transports act as an abstraction from the underlying HTTP protocol. It
+permits future non-HTTP protocols to also be abstracted away in a similar
+manner. Furthermore, different Transports can provide different methods of
+sending bytes to peers. For example, the library provides a
+<span class="code">pub.HttpSigTransport</span> which supports the HTTP
+Signatures specification when making connections.</p>
+<p>A <span class="code">pub.Transport</span> is intended to be a short-lived
+client, as it may contain authentication information that is not intended to be
+long-lived.</p>
+<p>An application using <span class="code">go-fed/activity</span> is expected to
+provide a <span class="code">pub.Transport</span> in the S2S
+<span class="code">NewTransport</span> method. That means it is up to your
+application to do any requisite key management, such as when constructing an
+<span class="code">pub.HttpSigTransport</span>:</p>
+<pre>
+<span class="keyword">func</span> (*myService) NewTransport(c <span class="type">context.Context</span>, actorBoxIRI *<span class="type">url.URL</span>, gofedAgent <span class="type">string</span>) (t <span class="type">pub.Transport</span>, err <span class="type">error</span>) {
+	prefs := []<span class="type">httpsig.Algorithm</span>{httpsig.RSA_SHA256}
+	digestPref := httpsig.DigestSha256
+	getHeadersToSign := []<span class="type">string</span>{httpsig.RequestTarget, <span class="literal">"Date"</span>}
+	postHeadersToSign := []<span class="type">string</span>{httpsig.RequestTarget, <span class="literal">"Date"</span>, <span class="literal">"Digest"</span>}
+	<span class="literal">// Using github.com/go-fed/httpsig for HTTP Signatures:</span>
+	getSigner, _, err := httpsig.NewSigner(prefs, digestPref, getHeadersToSign, httpsig.Signature, 3600)
+	postSigner, _, err := httpsig.NewSigner(prefs, digestPref, postHeadersToSign, httpsig.Signature, 3600)
+	pubKeyId, privKey, err := s.getKeysForActorBoxIRI(actorBoxIRI)
+	client := &amp;http.Client{
+		Timeout: time.Second * 30,
+	}
+	t = pub.NewHttpSigTransport(
+		client,
+		<span class="type">"example.com"</span>,
+		&amp;myClock{},
+		getSigner,
+		postSigner,
+		pubKeyId,
+		privKey)
+	return
+}
+</pre>
+
 <h2 id="Utilities">Utilities</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>The <span class="code">pub</span> library provides a few additional functions
+that are handy utilities.</p>
+<p><span class="code">pub.ToId</span> obtains the IRI of the ID for any kind of
+functional property or non-functional property iterator:</p>
+<pre>
+<span class="keyword">var</span> next <span class="type">vocab.ActivityStreamsNextProperty</span> = <span class="comment">// ...</span>
+nextIRI, err := pub.ToId(next)
+
+<span class="keyword">var</span> objectIterator <span class="type">vocab.ActivityStreamsObjectPropertyIterator</span> = <span class="comment">// ...</span>
+objectPropertyIRI, err := pub.ToId(objectIterator)
+</pre>
+<p>Similarly, <span class="code">pub.GetId</span> helps get the IRI of the ID
+for any kind of ActivityStreams type:</p>
+<pre>
+<span class="keyword">var</span> create <span class="type">vocab.ActivityStreamsCreate</span> = <span class="comment">// ...</span>
+createIRI, err := pub.GetId(create)
+</pre>
+
 <h2 id="Federating-Wrapped-Callbacks">Federating Wrapped Callbacks</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>The <span class="code">pub.FederatingWrappedCallbacks</span> type embodies a
+set of basic behaviors outlined in the ActivityPub specification for S2S
+federation. These behaviors can be supplemented by your own application's logic
+by providing the analogous functions when constructing an instance of
+<span class="code">pub.FederatingWrappedCallbacks</span>:</p>
+<pre>
+f := <span class="type">pub.FederatingWrappedCallbacks</span> {
+	<span class="comment">// Example supplemental "Create" Activity app behavior</span>
+	Create: <span class="keyword">func</span>(c <span class="type">context.Context</span>, create <span class="type">vocab.ActivityStreamsCreate</span>) <span class="type">error</span> {
+		myAppBehavior() <span class="comment">// Etc...</span>
+	},
+}
+</pre>
+<p>When handing an Activity, it will always attempt to store it in the database.
+The ActivityPub specification outlines additional suggested behaviors. The
+Activities that have default behaviors that are supported and can be
+supplemented by your application's logic are:</p>
+<ul>
+<li><span class="code">Create</span>: create objects in the Database.</li>
+<li><span class="code">Update</span>: update objects in the Database.</li>
+<li><span class="code">Delete</span>: delete objects from the Database.</li>
+<li><span class="code">Follow</span>: do behavior based on the
+<span class="code">OnFollow</span> value set in the
+<span class="code">pub.FederatingWrappedCallbacks</span>. By default it is
+<span class="code">pub.OnFollowDoNothing</span> which simply adds the Follow to
+the Database. A value of
+<span class="code">pub.OnFollowAutomaticallyAccept</span> will
+automatically send an Accept in response to the Follow request.
+A value of <span class="code">pub.OnFollowAutomaticallyReject</span> will
+automatically send a Reject in response to the Follow request.</li>
+<li><span class="code">Accept</span>: if in response to a Follow, will properly
+add the appropriate Actor to the proper Following collection.</li>
+<li><span class="code">Reject</span>: no notable behaviors.</li>
+<li><span class="code">Add</span>: if the target is a Collection or
+OrderedCollection, adds the object to such a collection.</li>
+<li><span class="code">Remove</span>: if the target is a Collection or
+OrderedCollection, removes the object from such a collection.</li>
+<li><span class="code">Like</span>: adds the Like IRI to the list of IDs in the
+<span class="code">likes</span> collection.</li>
+<li><span class="code">Announce</span>: adds the Announce IRI to the list of
+IDs in the <span class="code">shares</span> collection.</li>
+<li><span class="code">Undo</span>: no notable behaviors.</li>
+<li><span class="code">Block</span>: no notable behaviors. It is technically a
+violation of the ActivityPub specification to federate Block Activities.</li>
+</ul>
+
 <h2 id="Social-Wrapped-Callbacks">Social Wrapped Callbacks</h2>
-<aside class="caution"><p>Under construction.</p></aside>
+<p>The <span class="code">pub.SocialWrappedCallbacks</span> type embodies a
+set of basic behaviors outlined in the ActivityPub specification for C2S
+federation. These behaviors can be supplemented by your own application's logic
+by providing the analogous functions when constructing an instance of
+<span class="code">pub.SocialWrappedCallbacks</span>:</p>
+<pre>
+s := <span class="type">pub.SocialWrappedCallbacks</span> {
+	<span class="comment">// Example supplemental "Create" Activity app behavior</span>
+	Create: <span class="keyword">func</span>(c <span class="type">context.Context</span>, create <span class="type">vocab.ActivityStreamsCreate</span>) <span class="type">error</span> {
+		myAppBehavior() <span class="comment">// Etc...</span>
+	},
+}
+</pre>
+<p>When handing an Activity, it will always attempt to store it in the database.
+The ActivityPub specification outlines additional suggested behaviors. The
+Activities that have default behaviors that are supported and can be
+supplemented by your application's logic are:</p>
+<ul>
+<li><span class="code">Create</span>: ensures that the
+<span class="code">attributedTo</span>, <span class="code">to</span>,
+<span class="code">bto</span>, <span class="code">cc</span>,
+<span class="code">bcc</span>, <span class="code">audience</span> properties are
+normalized correctly before being persisted in the database.</li>
+<li><span class="code">Update</span>: applies a partial diff to the existing
+ActivityStreams data before updating in the database.</li>
+<li><span class="code">Delete</span>: deletes data from the database.</li>
+<li><span class="code">Follow</span>: no notable behaviors.</li>
+<li><span class="code">Add</span>: if the target is a Collection or
+OrderedCollection, adds the object to such a collection.</li>
+<li><span class="code">Remove</span>: if the target is a Collection or
+OrderedCollection, removes the object from such a collection.</li>
+<li><span class="code">Like</span>: adds the object IDs to the actor's
+<span class="code">liked</span> collection.</li>
+<li><span class="code">Undo</span>: no notable behaviors.</li>
+<li><span class="code">Block</span>: no notable behaviors.</li>
+</ul>
 {{template "footer" .C}}{{end}}
 
 {{/* HTTPSIGS REFERENCE TEMPLATE */}}
