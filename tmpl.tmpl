@@ -919,7 +919,9 @@ Server-to-Server option, so let's call
 <p>Oh! Looks like we aren't ready to call it yet! We can see we will need to
 pass in some interfaces. Let's stub out some types and revisit their
 implementations later. First, the stub for the common behavior on a new type we
-will internally call <span class="code">myService</span>:</p>
+will internally call <span class="code">myService</span>. We won't visit these
+specific method implementations here, but detailed guidance is provided in the
+<a href="/ref/activity/pub#The-CommonBehavior-Interface">activity/pub documentation</a>:</p>
 <pre><span class="keyword">type</span> <span class="type">myService</span> <span class="keyword">struct</span> {}
 <span class="keyword">func</span> (*<span class="type">myService</span>) AuthenticateGetInbox(c <span class="type">context.Context</span>,
 	w <span class="type">http.ResponseWriter</span>,
@@ -948,8 +950,12 @@ will internally call <span class="code">myService</span>:</p>
 	<span class="keyword">return</span>
 }
 </pre>
-<p>Next up, let's stub out the methods for the <span class="code">FederatingProtocol</span>. Let's also
-put them on the <span class="code">myService</span> type we just created:</p>
+<p>Next up, let's stub out the methods for the
+<span class="code">FederatingProtocol</span>. Let's also put them on the
+<span class="code">myService</span> type we just created. We will visit one
+of these methods in detail, but for the others the
+<a href="/ref/activity/pub#The-FederatingProtocol-Interface">activity/pub documentation</a>
+should act as a handy guide:</p>
 <pre><span class="keyword">func</span> (*<span class="type">myService</span>) PostInboxRequestBodyHook(c <span class="type">context.Context</span>,
 	r *<span class="type">http.Request</span>,
 	activity <span class="type">Activity</span>) (context.Context, error) {
@@ -1016,7 +1022,9 @@ libraries.</p>
 as being independent from ActivityStreams behaviors. So, don't confuse the
 <span class="code">Create</span> ActivityStreams type with the Database
 Create method we write.</p></aside>
-<p>This is what a partial demo implementation could look like:</p>
+<p>This is what a partial demo implementation could look like, and the 
+<a href="/ref/activity/pub#The-Database-Interface">activity/pub documentation</a> should help in
+implementing the other methods:</p>
 <pre><span class="keyword">type</span> <span class="type">myDB</span> <span class="keyword">struct</span> {
 	<span class="comment">// The content of our app, keyed by ActivityPub ID.</span>
 	content *<span class="type">sync.Map</span>
@@ -1411,7 +1419,9 @@ variable:</p>
 default behaviors provided by Go-Fed. Then, as it grows, you can completely
 customize it as you see fit.</p>
 <p>Let's breeze through the rest of the stubs discussing what is expected in
-each in order to have an ActivityPub compliant implementation</p>
+each in order to have an ActivityPub compliant implementation, though the
+<a href="/ref/activity/pub">activity/pub documentation</a>
+goes into more detail:</p>
 <ul>
 <li><span class="code">AuthenticateGetInbox</span>: Provides a way for you to
 deny GET HTTP ActivityPub requests for an actor's inbox. It is still compliant
