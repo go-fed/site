@@ -1,0 +1,13 @@
+.breadcrumb {
+	list-style: none;
+	display: flex;
+	flex-flow: row wrap;
+	li:not(:first-child) {
+		&:before {
+			content: ">"
+		}
+	}
+	li {
+		margin-right: 0.25em;
+	}
+}

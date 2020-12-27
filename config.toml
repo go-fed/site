@@ -1,0 +1,79 @@
+baseURL = "https://go-fed.org/"
+languageCode = "en-us"
+title = "Go-Fed"
+
+disableKinds = ["taxonomy", "term"]
+
+[markup.goldmark.renderer]
+unsafe = true
+
+[markup]
+  [markup.tableOfContents]
+    ordered = true
+
+  [markup.highlight]
+  # style previews at https://xyproto.github.io/splash/docs/
+    style = "friendly"
+    tabWidth = 3
+    guessSyntax = true
+
+[menu]
+
+[[menu.main]]
+identifier = "home"
+name = "Home"
+url = "/"
+weight = 10
+
+[[menu.main]]
+identifier = "glance"
+name = "ActivityPub At A Glance"
+url = "/activitypub-glance/"
+weight = 30
+
+[[menu.main]]
+identifier = "overview"
+name = "Overview"
+url = "/overview/"
+weight = 20
+
+[[menu.main]]
+identifier = "app-tutorial"
+name = "App Tutorial"
+url = "/activitypub-tutorial/"
+weight = 40
+
+[[menu.main]]
+identifier = "reference"
+name = "Reference"
+url = "/ref/"
+weight = 50
+
+[[menu.main]]
+identifier = "streams"
+name = "activity/streams"
+url = "/ref/activity/streams/"
+weight = 51
+parent = "reference"
+
+[[menu.main]]
+identifier = "pub"
+name = "activity/pub"
+url = "/ref/activity/pub/"
+weight = 52
+parent = "reference"
+
+[[menu.main]]
+identifier = "httpsig"
+name = "httpsig"
+url = "/ref/httpsig/"
+weight = 53
+parent = "reference"
+
+[[menu.main]]
+identifier = "apcore"
+name = "apcore"
+url = "/ref/apcore/"
+weight = 54
+parent = "reference"
+

@@ -1,0 +1,59 @@
+<svg height="500" width="480">
+  
+  <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z"></path>
+  </marker>
+  
+  <rect x="1" y="1" width="478" height="478" class="svgborder"></rect>
+
+  
+  <rect x="245" y="5" width="230" height="385" class="svgactor"></rect>
+  <text x="340" y="25" class="svgtextsmall">Actor</text>
+  <text x="337" y="45" class="svgtextsmaller">Concept</text>
+  
+  <rect x="250" y="55" width="220" height="75" class="svgborder svgpubactor"></rect>
+  <text x="310" y="85" class="svgtextsmall">Actor Inbox</text>
+  <text x="280" y="110" class="svgtextsmaller">HTTP POST*, HTTP GET*</text>
+  
+  <rect x="250" y="140" width="220" height="75" class="svgborder svgpubactor"></rect>
+  <text x="305" y="170" class="svgtextsmall">Actor Outbox</text>
+  <text x="280" y="195" class="svgtextsmaller">HTTP POST**, HTTP GET</text>
+  
+  <rect x="250" y="225" width="220" height="75" class="svgborder svgashandler"></rect>
+  <text x="335" y="255" class="svgtextsmall">Actor</text>
+  <text x="325" y="280" class="svgtextsmaller">HTTP GET</text>
+  
+  <rect x="250" y="310" width="220" height="75" class="svgborder svgashandler"></rect>
+  <text x="265" y="340" class="svgtextsmall">Followers, Liked, etc.</text>
+  <text x="325" y="365" class="svgtextsmaller">HTTP GET</text>
+  
+  <rect x="245" y="400" width="230" height="75" class="svgborder svgashandler"></rect>
+  <text x="295" y="430" class="svgtextsmall">Other Content</text>
+  <text x="325" y="455" class="svgtextsmaller">HTTP GET</text>
+  
+  <line x1="125" y1="35" x2="245" y2="35" class="svgdepline"></line>
+  <line x1="125" y1="35" x2="125" y2="220" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="110" y1="190" x2="110" y2="220" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="95" y1="190" x2="95" y2="220" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="140" y1="190" x2="140" y2="220" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="155" y1="190" x2="155" y2="220" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="95" y1="190" x2="155" y2="190" class="svgdepline"></line>
+
+  
+  <rect x="70" y="225" width="110" height="75" class="svgborder svgremotepeer"></rect>
+  <text x="77" y="255" class="svgtextsmall">Peer Actor</text>
+  <text x="87" y="280" class="svgtextsmaller">(Federating)</text>
+  
+  <line x1="180" y1="257" x2="210" y2="257" class="svgdepline"></line>
+  <line x1="210" y1="87" x2="210" y2="432" class="svgdepline"></line>
+  <line x1="210" y1="87" x2="245" y2="87" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="210" y1="172" x2="245" y2="172" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="210" y1="257" x2="245" y2="257" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="210" y1="342" x2="245" y2="342" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="210" y1="432" x2="240" y2="432" class="svgdepline" marker-end="url(#arrow)"></line>
+  
+  
+  <rect x="1" y="479" width="478" height="20" class="svgborder"></rect>
+  <text x="5" y="493" class="svgtextsmaller">*Only S2S</text>
+  <text x="120" y="493" class="svgtextsmaller">**Only C2S</text>
+</svg>

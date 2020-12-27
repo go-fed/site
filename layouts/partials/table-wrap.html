@@ -1,0 +1,12 @@
+<script>
+	var tables = document.querySelectorAll('table')
+	for (i = 0; i < tables.length; ++i) {
+		wrapper = document.createElement('div')
+		wrapper.classList.add('table-wrapper')
+		tables[i].parentNode.insertBefore(wrapper, tables[i])
+		wrapper.appendChild(tables[i])
+	}
+</script>
+<style>
+	.table-wrapper {max-width: 100%; overflow: auto;}
+</style>

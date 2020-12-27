@@ -1,0 +1,32 @@
+a:link,
+a:visited {
+	color: inherit;
+	text-decoration-color: #0060ff;
+	transition: 
+		text-decoration-thickness 200ms ease-out, 
+		text-underline-offset 200ms ease-out,
+		text-decoration-color 200ms ease-out,
+		color 200ms ease-out
+	; 
+}
+
+a:hover, a:focus, a:active {
+	text-decoration-color: #0060ff;
+}
+
+a:link {text-underline-offset: -0.075em;}
+a:hover {text-underline-offset: -0.375em;}
+
+@supports (text-decoration-thickness: 1em) {
+	a:link {
+		text-decoration-thickness: 0.125em;  
+		text-underline-offset: 0.125em;
+		text-decoration-skip-ink: none;
+	}
+
+	a:hover {
+		color: white;
+		text-decoration-thickness: 1.125em;
+		text-underline-offset: -0.875em;     
+	}
+}

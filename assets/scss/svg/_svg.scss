@@ -1,0 +1,68 @@
+.svgborder {
+	stroke: black;
+	stroke-width: 2;
+	fill: none;
+}
+.svgdepline {
+	stroke: black;
+	stroke-width: 2;
+	fill: none;
+}
+.svglibrary {
+	stroke: black;
+	stroke-width: 2;
+	fill: none;
+}
+.svgapp {
+	fill: lightyellow;
+}
+.svgap {
+	fill: lightpink;
+}
+.svgas {
+	fill: lightgreen;
+}
+.svgjsonld {
+	fill: lightblue;
+}
+.svgother {
+	fill: lightgray;
+}
+.svgprovide {
+	fill: white;
+}
+.svgwip {
+	stroke-dasharray: 2;
+}
+.svgactor {
+	stroke-dasharray: 2;
+	stroke: black;
+	stroke-width: 2;
+	fill: lightblue;
+}
+.svgpubactor {
+	fill: lightgreen;
+}
+.svgashandler {
+	fill: lightyellow;
+}
+.svgremotepeer {
+	fill: lightpink;
+}
+.svgyoublock {
+	fill: lightgray;
+}
+.svgtext {
+	font: 30px sans-serif;
+}
+.svgtextsmall {
+	font: 20px sans-serif;
+}
+.svgtextsmaller {
+	font: 14px sans-serif;
+}
+
+.svg-container {
+	max-width: 100vw;
+	overflow: auto;
+}

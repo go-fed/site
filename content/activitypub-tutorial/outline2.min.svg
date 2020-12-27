@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg">
+<marker id="a" markerHeight="6" markerWidth="6" orient="auto-start-reverse" refX="5" refY="5" viewBox="0 0 10 10">
+<path d="m0 0l10 5-10 5z"/>
+</marker>
+<rect class="svgborder" x="1" y="1" width="478" height="478"/>
+<rect class="svgactor" x="245" y="5" width="230" height="385"/>
+<text class="svgtextsmall" x="340" y="25">Actor</text>
+<text class="svgtextsmaller" x="337" y="45">Concept</text>
+<rect class="svgborder svgpubactor" x="250" y="55" width="220" height="75"/>
+<text class="svgtextsmall" x="310" y="85">Actor Inbox</text>
+<text class="svgtextsmaller" x="280" y="110">HTTP POST*, HTTP GET*</text>
+<rect class="svgborder svgpubactor" x="250" y="140" width="220" height="75"/>
+<text class="svgtextsmall" x="305" y="170">Actor Outbox</text>
+<text class="svgtextsmaller" x="280" y="195">HTTP POST**, HTTP GET</text>
+<rect class="svgborder svgashandler" x="250" y="225" width="220" height="75"/>
+<text class="svgtextsmall" x="335" y="255">Actor</text>
+<text class="svgtextsmaller" x="325" y="280">HTTP GET</text>
+<rect class="svgborder svgashandler" x="250" y="310" width="220" height="75"/>
+<text class="svgtextsmall" x="265" y="340">Followers, Liked, etc.</text>
+<text class="svgtextsmaller" x="325" y="365">HTTP GET</text>
+<rect class="svgborder svgashandler" x="245" y="400" width="230" height="75"/>
+<text class="svgtextsmall" x="295" y="430">Other Content</text>
+<text class="svgtextsmaller" x="325" y="455">HTTP GET</text>
+<line class="svgdepline" x1="125" x2="245" y1="35" y2="35"/>
+<line class="svgdepline" x1="125" x2="125" y1="35" y2="220" marker-end="url(#a)"/>
+<line class="svgdepline" x1="110" x2="110" y1="190" y2="220" marker-end="url(#a)"/>
+<line class="svgdepline" x1="95" x2="95" y1="190" y2="220" marker-end="url(#a)"/>
+<line class="svgdepline" x1="140" x2="140" y1="190" y2="220" marker-end="url(#a)"/>
+<line class="svgdepline" x1="155" x2="155" y1="190" y2="220" marker-end="url(#a)"/>
+<line class="svgdepline" x1="95" x2="155" y1="190" y2="190"/>
+<rect class="svgborder svgremotepeer" x="70" y="225" width="110" height="75"/>
+<text class="svgtextsmall" x="77" y="255">Peer Actor</text>
+<text class="svgtextsmaller" x="87" y="280">(Federating)</text>
+<line class="svgdepline" x1="180" x2="210" y1="257" y2="257"/>
+<line class="svgdepline" x1="210" x2="210" y1="87" y2="432"/>
+<line class="svgdepline" x1="210" x2="245" y1="87" y2="87" marker-end="url(#a)"/>
+<line class="svgdepline" x1="210" x2="245" y1="172" y2="172" marker-end="url(#a)"/>
+<line class="svgdepline" x1="210" x2="245" y1="257" y2="257" marker-end="url(#a)"/>
+<line class="svgdepline" x1="210" x2="245" y1="342" y2="342" marker-end="url(#a)"/>
+<line class="svgdepline" x1="210" x2="240" y1="432" y2="432" marker-end="url(#a)"/>
+<rect class="svgborder" x="1" y="479" width="478" height="20"/>
+<text class="svgtextsmaller" x="5" y="493">*Only S2S</text>
+<text class="svgtextsmaller" x="120" y="493">**Only C2S</text>
+<rect class="svgborder" x="479" y="1" width="299" height="498"/>
+<rect class="svgborder svgyoublock" x="500" y="87" width="110" height="350"/>
+<text class="svgtextsmall" x="515" y="245">MyServer</text>
+<text class="svgtextsmaller" x="520" y="270">Map HTTP</text>
+<text class="svgtextsmaller" x="519" y="290">Handlers to</text>
+<text class="svgtextsmaller" x="519" y="310">go-fed calls</text>
+<rect class="svgborder svgpubactor" x="645" y="87" width="120" height="75"/>
+<text class="svgtextsmall" x="662" y="132">pub.Actor</text>
+<line class="svgdepline" x1="470" x2="485" y1="92" y2="92"/>
+<line class="svgdepline" x1="470" x2="485" y1="177" y2="177"/>
+<line class="svgdepline" x1="485" x2="485" y1="92" y2="177"/>
+<line class="svgdepline" x1="485" x2="500" y1="130" y2="130"/>
+<line class="svgdepline svgyouline" x1="500" x2="610" y1="130" y2="130"/>
+<line class="svgdepline" x1="610" x2="640" y1="130" y2="130" marker-end="url(#a)"/>
+<rect class="svgborder svgashandler" x="645" y="310" width="120" height="75"/>
+<text class="svgtextsmaller" x="650" y="355">pub.HandlerFunc</text>
+<line class="svgdepline" x1="470" x2="485" y1="262" y2="262"/>
+<line class="svgdepline" x1="470" x2="485" y1="347" y2="347"/>
+<line class="svgdepline" x1="475" x2="485" y1="437" y2="437"/>
+<line class="svgdepline" x1="485" x2="485" y1="262" y2="437"/>
+<line class="svgdepline" x1="485" x2="500" y1="347" y2="347"/>
+<line class="svgdepline svgyouline" x1="500" x2="610" y1="347" y2="347"/>
+<line class="svgdepline" x1="610" x2="640" y1="347" y2="347" marker-end="url(#a)"/>
+</svg>
