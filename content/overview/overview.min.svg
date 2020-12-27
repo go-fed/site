@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 480 600" xmlns="http://www.w3.org/2000/svg">
+<marker id="a" markerHeight="6" markerWidth="6" orient="auto-start-reverse" refX="5" refY="5" viewBox="0 0 10 10">
+<path d="m0 0l10 5-10 5z"/>
+</marker>
+<text class="svgtext" x="20" y="30">go-fed libraries</text>
+<text class="svgtext" x="295" y="30">concepts</text>
+<rect class="svglibrary" width="240" height="600"/>
+<rect class="svglibrary" x="240" width="240" height="600"/>
+<rect class="svglibrary svgjsonld" x="245" y="495" width="230" height="100"/>
+<text class="svgtext" x="290" y="555">JSON-LD</text>
+<rect class="svglibrary svgas" x="245" y="370" width="230" height="100"/>
+<text class="svgtext" x="255" y="430">ActivityStreams</text>
+<line class="svgdepline" x1="360" x2="360" y1="495" y2="475" marker-end="url(#a)"/>
+<rect class="svglibrary svgap" x="245" y="245" width="230" height="100"/>
+<text class="svgtext" x="285" y="305">ActivityPub</text>
+<line class="svgdepline" x1="360" x2="360" y1="370" y2="350" marker-end="url(#a)"/>
+<rect class="svglibrary svgother" x="360" y="120" width="115" height="100"/>
+<text class="svgtextsmall" x="395" y="165">Other</text>
+<text class="svgtextsmaller" x="370" y="190">(Http Sigs, etc.)</text>
+<rect class="svglibrary svgapp" x="245" y="45" width="230" height="50"/>
+<text class="svgtext" x="300" y="80">Fedi app</text>
+<line class="svgdepline" x1="300" x2="300" y1="245" y2="100" marker-end="url(#a)"/>
+<line class="svgdepline" x1="420" x2="420" y1="120" y2="100" marker-end="url(#a)"/>
+<rect class="svglibrary svgjsonld" x="5" y="495" width="230" height="100"/>
+<text class="svgtextsmall" x="30" y="545">go-fed/activity/astool</text>
+<text class="svgtextsmaller" x="70" y="565">(at compile time)</text>
+<rect class="svglibrary svgas" x="5" y="370" width="230" height="100"/>
+<text class="svgtextsmall" x="20" y="427">go-fed/activity/streams</text>
+<line class="svgdepline" x1="120" x2="120" y1="495" y2="475" marker-end="url(#a)"/>
+<rect class="svglibrary svgap" x="5" y="245" width="230" height="100"/>
+<text class="svgtextsmall" x="40" y="302">go-fed/activity/pub</text>
+<line class="svgdepline" x1="120" x2="120" y1="370" y2="350" marker-end="url(#a)"/>
+<rect class="svglibrary svgother" x="120" y="120" width="115" height="100"/>
+<text class="svgtextsmaller" x="135" y="175">go-fed/httpsig</text>
+<rect class="svglibrary svgapp svgwip" x="5" y="45" width="230" height="50"/>
+<text class="svgtextsmall" x="60" y="75">go-fed/apcore</text>
+<line class="svgdepline" x1="60" x2="60" y1="245" y2="100" marker-end="url(#a)"/>
+<line class="svgdepline" x1="180" x2="180" y1="120" y2="100" marker-end="url(#a)"/>
+</svg>

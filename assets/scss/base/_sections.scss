@@ -1,0 +1,24 @@
+html {
+	scroll-behavior: smooth;
+}
+body {
+	display: flex;
+	flex-flow: column;
+	min-height: 100vh;
+	position: relative;
+}
+main {flex-grow: 1;}
+.section {
+	padding: 2em 0;
+	@media (min-width: 600px) {padding: 3em 0}
+	@media (min-width: 62em) {padding: 4em 0}
+}
+.container {
+	width: 100%;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 0 1em;
+}
+.page-header {
+	padding: 0;
+}

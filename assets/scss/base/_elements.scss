@@ -1,0 +1,29 @@
+pre {
+	padding: 1em;
+	overflow-x: auto;
+}
+
+ol {list-style: decimal;}
+ul {list-style: disc;}
+
+p > code {
+	word-break: break-word;
+	white-space: pre-wrap;
+}
+
+em {font-style: italic}
+strong {font-weight: 700}
+
+blockquote {
+	border-left: 2px solid;
+	padding-left: 1em
+}
+
+img {max-width: 100%;}
+
+th {background: rgba(0,0,0,0.15);}
+th, td {border: 1px solid}
+th, td {padding: 0.5em}
+
+dt {font-weight: 700}
+dd {margin: 1em 0; margin-left: 1em;}

@@ -1,0 +1,41 @@
+<header class="site-header">
+	<div class="container">
+		<a href="{{ $.Site.BaseURL }}" class="site-masthead">
+			<img class="site-icon" src='{{ $.Site.BaseURL }}/favicon/192.png'>
+			<h1 class="site-title">{{$.Site.Title}}</h1>
+		</a>
+		<nav class="site-nav">
+			<ul>
+				{{ $currentPage := . }}
+				{{ range .Site.Menus.main }}
+				{{ if .HasChildren }}
+				{{ $active := or (eq $.URL .URL) (or ($currentPage.HasMenuCurrent "main" .) ($currentPage.IsMenuCurrent "main" .)) }}
+				<li class="{{ if $active }}active{{ end }}">
+					 <a href="{{ .URL | absLangURL }}">
+						{{ .Pre }}
+						<span>{{ .Name }}</span>
+						{{ .Post }}
+					 </a>
+					 <ul class="sub-menu">
+						 {{ range .Children }}
+						 {{ $active := or (eq $.URL .URL) (or ($currentPage.HasMenuCurrent "main" .) ($currentPage.IsMenuCurrent "main" .)) }}
+						 <li class="{{ if $active }}active{{ end }}">
+							<a href="{{ .URL }}">{{ .Name }}</a>
+						 {{ end }}
+					 </ul>
+				</li>
+				{{ else }}
+				{{ $active := or (eq $.URL .URL) (or ($currentPage.HasMenuCurrent "main" .) ($currentPage.IsMenuCurrent "main" .)) }}
+				<li class="{{ if $active }}active{{ end }}">
+					<a href="{{ .URL | absLangURL }}">
+					  {{ .Pre }}
+					  <span>{{ .Name }}</span>
+					  {{ .Post }}
+					</a>
+			  </li>
+				{{ end }}
+				{{ end }}
+		  </ul>
+		</nav>
+	</div>
+</header>

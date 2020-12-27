@@ -1,0 +1,24 @@
+#back-to-top {
+	display: none;
+}
+@media (pointer: coarse) {
+	#back-to-top {
+		background: rgba(#333,0.6);
+		color: white;
+		text-decoration: none;
+		position: fixed;
+		right: 1em;
+		bottom: 1em;
+		width: 80px;
+		height: 80px;
+		border-radius: 100px;
+		padding: 1em;
+		z-index: 2;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		
+	}
+	body {position: relative;}
+}

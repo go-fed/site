@@ -1,0 +1,55 @@
+<svg height="400" width="610">
+  
+  <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z"></path>
+  </marker>
+  
+  <rect x="1" y="1" width="608" height="398" class="svgborder"></rect>
+
+  <rect x="220" y="25" width="170" height="100" class="svgborder svgremotepeer"></rect>
+  <text x="240" y="55" class="svgtextsmall">HTTP Request</text>
+  <text x="275" y="72" class="svgtextsmaller">In/Outbox</text>
+  <text x="290" y="95" class="svgtextsmaller">Data</text>
+  <text x="245" y="109" class="svgtextsmaller">(Provided By Peer)</text>
+
+  <rect x="220" y="170" width="170" height="80" class="svgactor"></rect>
+  <text x="260" y="200" class="svgtextsmall">pub.Actor</text>
+  <text x="262" y="220" class="svgtextsmaller">Golang Type</text>
+  <text x="240" y="234" class="svgtextsmaller">(Provided By Library)</text>
+
+  <rect x="25" y="295" width="170" height="80" class="svgborder svgprovide"></rect>
+  <text x="70" y="325" class="svgtextsmall">Database</text>
+  <text x="93" y="345" class="svgtextsmaller">State</text>
+  <text x="55" y="359" class="svgtextsmaller">(Provided By You)</text>
+
+  <rect x="220" y="295" width="170" height="80" class="svgborder svgprovide"></rect>
+  <text x="225" y="325" class="svgtextsmall">CommonBehavior</text>
+  <text x="280" y="345" class="svgtextsmaller">Behavior</text>
+  <text x="255" y="359" class="svgtextsmaller">(Provided By You)</text>
+
+  <rect x="415" y="295" width="170" height="80" class="svgborder svgprovide"></rect>
+  <text x="425" y="325" class="svgtextsmall">C/S2S Behaviors</text>
+  <text x="435" y="345" class="svgtextsmaller">Federation Behaviors</text>
+  <text x="447" y="359" class="svgtextsmaller">(Provided By You)</text>
+
+  <line x1="305" y1="125" x2="305" y2="164" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="305" y1="250" x2="305" y2="270" class="svgdepline"></line>
+  <line x1="110" y1="270" x2="500" y2="270" class="svgdepline"></line>
+  <line x1="110" y1="270" x2="110" y2="289" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="305" y1="270" x2="305" y2="289" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="500" y1="270" x2="500" y2="289" class="svgdepline" marker-end="url(#arrow)"></line>
+
+  <rect x="25" y="25" width="170" height="100" class="svgborder svgremotepeer"></rect>
+  <text x="45" y="55" class="svgtextsmall">HTTP Request</text>
+  <text x="65" y="72" class="svgtextsmaller">Not In/Outbox</text>
+  <text x="95" y="95" class="svgtextsmaller">Data</text>
+  <text x="50" y="109" class="svgtextsmaller">(Provided By Peer)</text>
+
+  <rect x="25" y="170" width="170" height="80" class="svgborder svgashandler"></rect>
+  <text x="33" y="200" class="svgtextsmall">pub.HandlerFunc</text>
+  <text x="67" y="220" class="svgtextsmaller">Golang Func</text>
+  <text x="45" y="234" class="svgtextsmaller">(Provided By Library)</text>
+
+  <line x1="110" y1="125" x2="110" y2="164" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="65" y1="250" x2="65" y2="289" class="svgdepline" marker-end="url(#arrow)"></line>
+</svg>

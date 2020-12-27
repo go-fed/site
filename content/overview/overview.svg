@@ -1,0 +1,45 @@
+<svg height="600" width="480">
+  
+  <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z"></path>
+  </marker>
+  
+  <text x="20" y="30" class="svgtext">go-fed libraries</text>
+  <text x="295" y="30" class="svgtext">concepts</text>
+  <rect width="240" height="600" class="svglibrary"></rect>
+  <rect x="240" width="240" height="600" class="svglibrary"></rect>
+  
+  
+  <rect x="245" y="495" width="230" height="100" class="svglibrary svgjsonld"></rect>
+  <text x="290" y="555" class="svgtext">JSON-LD</text>
+  <rect x="245" y="370" width="230" height="100" class="svglibrary svgas"></rect>
+  <text x="255" y="430" class="svgtext">ActivityStreams</text>
+  <line x1="360" y1="495" x2="360" y2="475" class="svgdepline" marker-end="url(#arrow)"></line>
+  <rect x="245" y="245" width="230" height="100" class="svglibrary svgap"></rect>
+  <text x="285" y="305" class="svgtext">ActivityPub</text>
+  <line x1="360" y1="370" x2="360" y2="350" class="svgdepline" marker-end="url(#arrow)"></line>
+  <rect x="360" y="120" width="115" height="100" class="svglibrary svgother"></rect>
+  <text x="395" y="165" class="svgtextsmall">Other</text>
+  <text x="370" y="190" class="svgtextsmaller">(Http Sigs, etc.)</text>
+  <rect x="245" y="45" width="230" height="50" class="svglibrary svgapp"></rect>
+  <text x="300" y="80" class="svgtext">Fedi app</text>
+  <line x1="300" y1="245" x2="300" y2="100" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="420" y1="120" x2="420" y2="100" class="svgdepline" marker-end="url(#arrow)"></line>
+  
+  
+  <rect x="5" y="495" width="230" height="100" class="svglibrary svgjsonld"></rect>
+  <text x="30" y="545" class="svgtextsmall">go-fed/activity/astool</text>
+  <text x="70" y="565" class="svgtextsmaller">(at compile time)</text>
+  <rect x="5" y="370" width="230" height="100" class="svglibrary svgas"></rect>
+  <text x="20" y="427" class="svgtextsmall">go-fed/activity/streams</text>
+  <line x1="120" y1="495" x2="120" y2="475" class="svgdepline" marker-end="url(#arrow)"></line>
+  <rect x="5" y="245" width="230" height="100" class="svglibrary svgap"></rect>
+  <text x="40" y="302" class="svgtextsmall">go-fed/activity/pub</text>
+  <line x1="120" y1="370" x2="120" y2="350" class="svgdepline" marker-end="url(#arrow)"></line>
+  <rect x="120" y="120" width="115" height="100" class="svglibrary svgother"></rect>
+  <text x="135" y="175" class="svgtextsmaller">go-fed/httpsig</text>
+  <rect x="5" y="45" width="230" height="50" class="svglibrary svgapp svgwip"></rect>
+  <text x="60" y="75" class="svgtextsmall">go-fed/apcore</text>
+  <line x1="60" y1="245" x2="60" y2="100" class="svgdepline" marker-end="url(#arrow)"></line>
+  <line x1="180" y1="120" x2="180" y2="100" class="svgdepline" marker-end="url(#arrow)"></line>
+</svg>

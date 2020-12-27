@@ -1,0 +1,67 @@
+{{ define "main" }}
+<main class="index">
+	<section id="hero" class="hero section">
+		<div class="container">
+			<h2 class="title">Have your Go application support ActivityPub today.</h2>
+			<p class="subtitle">Go-Fed provides two libraries and a tool to start working with ActivityStreams and ActivityPub data within your project.</p>
+			<p>Tired of applications that silo its users? Have a Go app that lacks social functionality? Got a great social experience and looking to implement it in Go? Want to join a decentralized network of social interactions? Looking to extend the fediverse? Would you like a pony? Go-Fed can help with all your non-equine needs!</p>
+			<img class="image" src="{{ $.Site.BaseURL }}images/activitypub.svg" alt="ActivityPub logo" width=192>
+		</div>
+	</section>
+	<section id="introduction" class="section">
+		<div class="container">
+			<h2 class="title">What is ActivityPub? What is Go-Fed?</h2>
+			<section class="fedi">
+				<img src="{{ $.Site.BaseURL }}images/fediverse.svg" alt="Fediverse logo" width=192>
+				<p>ActivityPub is a protocol that different social applications use to communicate with each other. Whether you want to create a new social app or retro-fit social functionality into an existing one, ActivityPub lets everyone use each other's network effect by pitching in together! This wider network-of-networks is known as the Fediverse. Users of many different software -- such as <a href="https://joinmastodon.org">Mastodon</a>, <a href="https://pleroma.social">Pleroma</a>, <a href="https://pixelfed.org">Pixelfed</a>, <a href="https://joinpeertube.org/en/home">Peertube</a>, <a href="https://writefreely.org">WriteFreely</a>, <a href="https://read.as">Read.as</a>, and others -- can talk, follow, share, and like each other's content regardless of the software they are using.</p>
+				<a class="button" href="{{ $.Site.BaseURL }}activitypub-glance">More about ActivityPub</a>
+			</section>
+			<section class="go-fed">
+				<img src="{{ $.Site.BaseURL }}favicon/192.png" alt="Go-Fed logo" width=192>
+				<p>Go-Fed is unlike most other software in the Fediverse. Instead of providing a monolithic end-product, it is the first standalone ActivityPub library, and a pioneering solution in Go. Go-Fed is designed for those who have no prior experience with ActivityPub, ActivityStreams, JSON-LD, or RDF. This library has been successfully used to federate since May 17, 2019, and it has reached version 1.0.0 as of July 9, 2020.</p>
+				<a class="button" href="{{ $.Site.BaseURL }}overview">More about Go-Fed</a>
+			</section>
+		</div>
+	</section>
+	<section id="usage" class="section">
+		<div class="container">
+			<h2 class="title">Using Go-Fed</h2>
+			<p>The following is a list of software which implements the Go-Fed libraries:</p>
+			<ul class="implementations">
+				<li class="implementation">
+					<a class="title" href="https://github.com/writeas/writefreely">WriteFreely</a>
+					<br>
+					<span class="body">A simple, open-source, privacy-focused blogging platform. WriteFreely is the software powering the <a href="https:/write.as">write.as</a> service.</span>
+				</li>
+				<li class="implementation">
+					<a class="title" href="https://github.com/writeas/Read.as">Read.as</a>
+					<br>
+					<span class="body">A long-form reader built on open protocols. Read.as powers the <a href="https://read.write.as">read.write.as</a> service.</span>
+				</li>
+				<li class="implementation">
+					<a class="title" href="https://github.com/go-fed/apcore">apcore</a>
+					<br>
+					<span class="body">A generic ActivityPub server framework in Go. apcore is a reference implementation of the Go-Fed suite of libraries.</span>
+				</li>
+				<li class="implementation">
+					<a class="title" href="https://github.com/go-fed/testsuite">AP Test Suite</a>
+					<br>
+					<span class="body">The unofficial ActivityPub test suite, hosted at <a href="https://test.activitypub.dev">test.activitypub.dev</a>.</span>
+				</li>
+			</ul>
+			<p>If you are using Go-Fed in your application and want to be added to this list, contact <a href="https://mastodon.technology/@cj">@cj@mastodon.technology</a> on the fediverse, or email <a href="mailto:cjslep@gmail.com">cjslep@gmail.com</a>. You can also try writing your own software that uses Go-Fed! Go-Fed is used by various personal blogs, tinkerers, and people that want ponies.</p>
+			<a class="button" href="{{ $.Site.BaseURL }}activitypub-tutorial">Follow the tutorial</a>
+		</div>
+	</section>
+	<section id="architecture" class="section">
+		<div class="container">
+			<h2 class="title">Watch the talk.</h2>
+			<div class="video-wrapper">
+				<iframe sandbox="allow-same-origin allow-scripts allow-popups" src="https://conf.tube/videos/embed/952f9cef-3b97-45e4-a248-199772a23f62" allowfullscreen="" width="560" height="315" frameborder="0"></iframe>
+			</div>
+			<p>"Go-Fed: Past, Present and Future" is a talk that was given at <a href="https://conf.activitypub.rocks/#home">ActivityPub Conf 2020</a>. The talk covers the principles behind Go-Fed, describes Go-Fed's architectural decisions such as being split into the activity/streams and activity/pub libraries, examines the technical reasons for the design of the go-fed/activity library, and explores future development potential. You can find more talks on <a href="https://conf.tube/video-channels/apconf_channel/videos">conf.tube</a>, or you can read the Go-Fed reference material to learn more about the internals of Go-Fed.</p>
+			<a class="button" href="{{ $.Site.BaseURL }}ref">View reference documentation</a>
+		</div>
+	</section>
+</main>
+{{ end }}

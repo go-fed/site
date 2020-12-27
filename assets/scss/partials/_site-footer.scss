@@ -1,0 +1,21 @@
+.site-footer {
+	hr {display: none;}
+	background: #333;
+	color: white;
+	a {color: inherit;}
+	.container {
+		display: flex;
+		flex-flow: row wrap;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.external-links {
+		display: flex;
+		justify-content: center;
+		a {
+			margin-right: 1em;
+			font-size: 2em;
+		}
+		a:last-child {margin-right: 0}
+	}
+}

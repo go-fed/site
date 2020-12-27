@@ -1,0 +1,29 @@
+{{ define "title" }}{{.Title}} | {{ .Site.Title }}{{ end }}
+{{ define "main" }}
+<main>
+	<header class="section page-header">
+		<div class="container">
+			{{ partial "breadcrumb" .}}
+			<h1 class="page-title">{{ .Title }}</h1>
+			<p class="page-summary">{{.Summary}}</p>
+		</div>
+	</header>
+	<section class="section list">
+		<div class="container">
+			{{ range .Pages }}
+				<article class="list-item">
+				{{ with .Params.cover }}
+				<img class="list-item__image" src="{{.}}">
+				{{end}}
+				<h2 class="list-item__title">{{ .Title }}</h2>
+				<p class="list-item__summary">{{.Summary}}</p>
+				{{/*
+				<datetime class="list-item__date">{{ .Date.Format "January 2, 2006" }}</datetime>
+				*/}}
+				<a class="list-item__readmore" href="{{ .Permalink }}">Read more...</a>
+			</article>
+			{{ end }}
+		</div>
+	</section>
+</main>
+{{ end }}

@@ -1,0 +1,45 @@
+{{ define "title" }}{{ .Title }} | {{ .Site.Title }}{{ end }}
+{{ define "main" }}
+<main>
+	<article class="page">
+		<header class="section page-header">
+			<div class="container">
+				{{ partial "breadcrumb" .}}
+				<h1 class="page-title" id="Title">{{ .Title }}</h1>
+				<p class="page-summary">{{.Summary}}</p>
+				{{/*
+				{{ with .Params.cover }}
+				<img class="page-cover" src="{{.}}">
+				{{end}}
+				*/}}
+			</div>
+		</header>
+		<aside class="meta section">
+			<div class="container">
+				{{/*
+				<datetime class="date"> {{ .Date.Format "Mon Jan 2, 2006" }} </datetime>
+				<p class="wordcount"> {{.WordCount}} words</p>
+
+				{{ with .Params.tags }}
+				<p>Keywords:</p>
+				<ul class="tags">
+					{{ range . }}
+					<li><a href='{{"tags/" | absURL }}{{. | urlize}}'>{{.}}</a></li>
+					{{ end }}
+				</ul>
+				{{ end }}
+				*/}}
+				{{ .TableOfContents }}
+			</div>
+		</aside>
+		<section class="section">
+			<div class="container">
+				{{ partial "header-link.html" .Content }}
+			</div>
+		</section>
+	</article>
+	{{ partial "back-to-top.html" . }}
+</main>
+{{ partial "task-list-styler.html" . }}
+{{ partial "table-wrap.html" . }}
+{{ end }}
