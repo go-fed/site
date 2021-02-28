@@ -922,7 +922,7 @@ mux.HandleFunc("/actors/me/inbox", func(w http.ResponseWriter, r *http.Request) 
 	// to render a webpage instead. But be sure to apply appropriate
 	// authorizations. There's no guarantees about authorization at
 	// this point.
-	http.Error("Non-ActivityPub request", http.StatusBadRequest)
+	http.Error(w, "Non-ActivityPub request", http.StatusBadRequest)
 	return
 })
 // Map the `me` actor's inbox to the path `/arbitrary/me/outbox`
@@ -944,7 +944,7 @@ mux.HandleFunc("/arbitrary/me/outbox", func(w http.ResponseWriter, r *http.Reque
 	// to render a webpage instead. But be sure to apply appropriate
 	// authorizations. There's no guarantees about authorization at
 	// this point.
-	http.Error("Non-ActivityPub request", http.StatusBadRequest)
+	http.Error(w, "Non-ActivityPub request", http.StatusBadRequest)
 	return
 })
 ```
@@ -1013,7 +1013,7 @@ mux.HandleFunc("/anything/me", func(w http.ResponseWriter, r *http.Request) {
 	// Here we return an error, but you may just as well decide
 	// to render a webpage instead. But be sure you've already
 	// applied the appropriate authorizations.
-	http.Error("Non-ActivityPub request", http.StatusBadRequest)
+	http.Error(w, "Non-ActivityPub request", http.StatusBadRequest)
 	return
 })
 ```
