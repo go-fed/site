@@ -126,7 +126,7 @@ And those actors can be used in your HTTP handlers, here's an example handler fo
 			// to render a webpage instead. But be sure to apply appropriate
 			// authorizations. There's no guarantees about authorization at
 			// this point.
-			http.Error("Non-ActivityPub request", http.StatusBadRequest)
+			http.Error(w, "Non-ActivityPub request", http.StatusBadRequest)
 			return
 		}
 	)
@@ -154,7 +154,7 @@ And similar for the outbox:
 			// to render a webpage instead. But be sure to apply appropriate
 			// authorizations. There's no guarantees about authorization at
 			// this point.
-			http.Error("Non-ActivityPub request", http.StatusBadRequest)
+			http.Error(w, "Non-ActivityPub request", http.StatusBadRequest)
 			return
 		}
 	)
@@ -184,7 +184,7 @@ Finally, you can also serve regular ActivityStreams data that is not related to 
 
 			// Here we return an error, but you may just as well decide
 			// to render a webpage instead.
-			http.Error("Non-ActivityPub request", http.StatusBadRequest)
+			http.Error(w, "Non-ActivityPub request", http.StatusBadRequest)
 			return
 		}
 	)
